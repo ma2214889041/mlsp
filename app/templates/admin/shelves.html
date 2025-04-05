@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰管理端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/admin.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>货架管理 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            padding: 20px 0;
+            background: #343a40;
+            color: white;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #495057;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.75);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: #0d6efd;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 24px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .content-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .shelf-card {
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .shelf-header {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            border-radius: 10px 10px 0 0;
+        }
+        .shelf-content {
+            padding: 15px;
+        }
+        .slot {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .slot.occupied {
+            background-color: #e2f3ea;
+            border-color: #c3e6cb;
+        }
+        .slot.expired {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .slot.near-expiry {
+            background-color: #fff3cd;
+            border-color: #ffeeba;
+        }
+        .expiry-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: 0.7rem;
+            padding: 2px 5px;
+            border-radius: 0 5px 0 5px;
+        }
+        .expired-badge {
+            background-color: #dc3545;
+            color: white;
+        }
+        .near-expiry-badge {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-shop"></i> 米兰食品公司</h4>
+            <div class="text-muted">管理后台</div>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/dashboard">
+                    <i class="bi bi-speedometer2"></i> 仪表盘
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/orders">
+                    <i class="bi bi-list-check"></i> 订单管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/products">
+                    <i class="bi bi-box"></i> 产品管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/inventory">
+                    <i class="bi bi-clipboard-data"></i> 库存管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/mlsp/admin/shelves">
+                    <i class="bi bi-grid-3x3"></i> 货架管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/restaurants">
+                    <i class="bi bi-shop"></i> 餐馆管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/employees">
+                    <i class="bi bi-people"></i> 员工管理
+                </a>
+            </li>
+            <li class="nav-item mt-5">
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-left"></i> 退出登录
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>货架管理</h2>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addShelfModal">
+                <i class="bi bi-plus-lg"></i> 添加货架
+            </button>
+        </div>
+
+        <div class="content-card mb-4">
+            <h5 class="mb-3">货架概览</h5>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <h6 class="card-title text-muted">总货架数</h6>
+                            <p class="card-text display-4">{{ shelves|length }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <h6 class="card-title text-muted">货位总数</h6>
+                            <p class="card-text display-4">{{ total_slots }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card text-center h-100">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <h6 class="card-title text-muted">空货位数</h6>
+                            <p class="card-text display-4">{{ empty_slots }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 货架列表 -->
+        {% if shelves %}
+        <div class="row">
+            {% for shelf in shelves %}
+            <div class="col-md-6 mb-4">
+                <div class="shelf-card">
+                    <div class="shelf-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ shelf.name }}</h5>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-primary me-1" 
+                                    data-bs-toggle="modal" data-bs-target="#editShelfModal{{ shelf.id }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal" data-bs-target="#deleteShelfModal{{ shelf.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="shelf-content">
+                        <div class="mb-3 d-flex justify-content-between">
+                            <div>
+                                <span class="badge bg-secondary">位置: {{ shelf.location }}</span>
+                                <span class="badge bg-info ms-2">{{ shelf.slots|length }} 个货位</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-success"
+                                    data-bs-toggle="modal" data-bs-target="#addSlotModal{{ shelf.id }}">
+                                <i class="bi bi-plus-lg"></i> 添加货位
+                            </button>
+                        </div>
+                        
+                        {% if shelf.slots %}
+                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                            {% for slot in shelf.slots %}
+                            <div class="col">
+                                <div class="slot {% if slot.inventory %}
+                                            {% if slot.is_expired %}expired
+                                            {% elif slot.is_near_expiry %}near-expiry
+                                            {% else %}occupied{% endif %}
+                                            {% endif %}">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0">货位 {{ slot.position }}</h6>
+                                        <button type="button" class="btn btn-sm btn-link text-danger p-0"
+                                                data-bs-toggle="modal" data-bs-target="#deleteSlotModal{{ slot.id }}">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    {% if slot.inventory %}
+                                    <div>
+                                        <p class="mb-1"><strong>商品:</strong> {{ slot.inventory.product.name }}</p>
+                                        <p class="mb-1"><strong>数量:</strong> {{ slot.inventory.quantity }} {{ slot.inventory.unit_type|default('份') }}</p>
+                                        <p class="mb-1"><strong>入库日期:</strong> {{ slot.inventory.entry_date.strftime('%Y-%m-%d') }}</p>
+                                        <p class="mb-0"><strong>到期日期:</strong> {{ slot.inventory.expiry_date.strftime('%Y-%m-%d') }}</p>
+                                        
+                                        {% if slot.is_expired %}
+                                        <span class="expiry-badge expired-badge">已过期</span>
+                                        {% elif slot.is_near_expiry %}
+                                        <span class="expiry-badge near-expiry-badge">即将过期</span>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted mb-2">空货位</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-inbox" style="font-size: 2rem; color: #ccc;"></i>
+                            <p class="mt-2 mb-0">该货架还没有货位</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- 编辑货架模态框 -->
+                <div class="modal fade" id="editShelfModal{{ shelf.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">编辑货架</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="/mlsp/admin/shelf/{{ shelf.id }}/edit" method="post">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="name{{ shelf.id }}" class="form-label">货架名称</label>
+                                        <input type="text" class="form-control" id="name{{ shelf.id }}" 
+                                               name="name" value="{{ shelf.name }}" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="location{{ shelf.id }}" class="form-label">位置描述</label>
+                                        <input type="text" class="form-control" id="location{{ shelf.id }}" 
+                                               name="location" value="{{ shelf.location }}" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                    <button type="submit" class="btn btn-primary">保存</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 删除货架模态框 -->
+                <div class="modal fade" id="deleteShelfModal{{ shelf.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">删除货架</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>您确定要删除货架 "{{ shelf.name }}" 吗？</p>
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-exclamation-triangle"></i> 此操作不可撤销，且将删除该货架上的所有货位及相关库存信息。
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <form action="/mlsp/admin/shelf/{{ shelf.id }}/delete" method="post">
+                                    <button type="submit" class="btn btn-danger">确认删除</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 添加货位模态框 -->
+                <div class="modal fade" id="addSlotModal{{ shelf.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">添加货位</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="/mlsp/admin/shelf/{{ shelf.id }}/add-slot" method="post">
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="position{{ shelf.id }}" class="form-label">货位标识</label>
+                                        <input type="text" class="form-control" id="position{{ shelf.id }}" 
+                                               name="position" placeholder="例如: A1, B2, C3" required>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                    <button type="submit" class="btn btn-primary">添加</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 循环创建删除货位模态框 -->
+                {% for slot in shelf.slots %}
+                <div class="modal fade" id="deleteSlotModal{{ slot.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">删除货位</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>您确定要删除货位 "{{ slot.position }}" 吗？</p>
+                                {% if slot.inventory %}
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> 该货位上有 {{ slot.inventory.product.name }} 商品。删除该货位将会移除相关库存记录。
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                <form action="/mlsp/admin/slot/{{ slot.id }}/delete" method="post">
+                                    <button type="submit" class="btn btn-danger">确认删除</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="content-card">
+            <div class="text-center py-5">
+                <i class="bi bi-grid-3x3" style="font-size: 3rem; color: #ccc;"></i>
+                <h4 class="mt-3">没有货架记录</h4>
+                <p class="text-muted">添加您的第一个货架，开始进行库存管理</p>
+                <button type="button" class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#addShelfModal">
+                    <i class="bi bi-plus-lg"></i> 添加货架
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 添加货架模态框 -->
+    <div class="modal fade" id="addShelfModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加新货架</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="/mlsp/admin/shelf/add" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">货架名称</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="例如: 冷藏区货架A" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location" class="form-label">位置描述</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   placeholder="例如: 仓库北侧" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary">添加</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/admin-pwa-install.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>米兰食品公司 PWA 测试</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f5f5f5; }
+    h1 { text-align: center; margin-bottom: 30px; color: #333; }
+    h2 { color: #444; }
+    .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .app-card { background: white; border-radius: 10px; padding: 20px; text-align: center; transition: transform 0.3s; }
+    .app-card:hover { transform: translateY(-5px); }
+    .app-icon { width: 100px; height: 100px; margin: 0 auto 15px; display: block; }
+    .app-button { display: inline-block; text-decoration: none; padding: 10px 20px; border-radius: 5px; color: white; font-weight: bold; margin-top: 15px; }
+    .client { background-color: #dc3545; }
+    .admin { background-color: #0d6efd; }
+    .employee { background-color: #198754; }
+    .instructions { background-color: #f8f9fa; padding: 15px; border-left: 4px solid #0d6efd; margin: 20px 0; }
+  </style>
+</head>
+<body>
+  <h1>米兰食品公司 PWA 应用</h1>
+  
+  <div class="card">
+    <h2>选择您要使用的应用</h2>
+    <p>米兰食品公司系统有三个独立的应用，每个都可以安装到您的主屏幕。请选择您需要的应用：</p>
+    
+    <div class="app-grid">
+      <div class="app-card">
+        <img src="/mlsp/static/icons/client.png" alt="客户端" class="app-icon">
+        <h3>客户端</h3>
+        <p>适合餐馆用户下单使用</p>
+        <a href="/mlsp/static/client-pwa-test.html" class="app-button client">进入客户端</a>
+      </div>
+      
+      <div class="app-card">
+        <img src="/mlsp/static/icons/admin.png" alt="管理端" class="app-icon">
+        <h3>管理端</h3>
+        <p>适合管理员使用</p>
+        <a href="/mlsp/static/admin-pwa-test.html" class="app-button admin">进入管理端</a>
+      </div>
+      
+      <div class="app-card">
+        <img src="/mlsp/static/icons/employee.png" alt="仓库端" class="app-icon">
+        <h3>仓库端</h3>
+        <p>适合仓库员工使用</p>
+        <a href="/mlsp/static/employee-pwa-test.html" class="app-button employee">进入仓库端</a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>安装指南</h2>
+    <div class="instructions">
+      <p><strong>如何安装PWA应用：</strong></p>
+      <ol>
+        <li>点击上方相应的应用入口</li>
+        <li>在打开的测试页面中，点击"安装XX应用"按钮</li>
+        <li>根据浏览器提示完成安装</li>
+      </ol>
+      <p><strong>注意：</strong> 如果您之前已经安装过任何一个应用，可能需要先清除浏览器缓存和Service Worker，然后重新尝试。</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+/* 移动应用模式CSS */
+
+/* 全局样式 */
+html {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  position: fixed;
+  padding: 0;
+  margin: 0;
+  /* 支持iOS中的安全区域 */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* PWA模式中隐藏不必要的UI元素 */
+@media all and (display-mode: fullscreen), all and (display-mode: standalone) {
+  .navbar .auth-buttons a[href="/logout"] {
+    display: none !important;
+  }
+  
+  /* 为底部导航栏提供额外的安全区域填充 */
+  .bottom-navbar {
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom)) !important;
+  }
+  
+  /* 替换登出按钮为一个只在PWA中可见的更新按钮 */
+  .pwa-refresh-button {
+    display: block !important;
+  }
+}
+
+/* 默认隐藏PWA特定UI元素 */
+.pwa-refresh-button {
+  display: none;
+}
+
+/* 改进触摸目标大小 */
+.btn, button, a, input[type="button"], input[type="submit"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* 提高表单元素的可用性 */
+input, select, textarea {
+  font-size: 16px !important; /* 防止iOS缩放 */
+}
+
+/* 平滑滚动 */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* 添加iOS风格的弹性滚动效果 */
+.ios-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 移除点击高亮 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出库管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .outbound-form {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .suggestion-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            display: none;
+        }
+        .suggestion-table th, .suggestion-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .suggestion-table th {
+            background-color: #f2f2f2;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .error-message {
+            color: #dc3545;
+            font-weight: bold;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>出库管理</h1>
+    
+    <div class="outbound-form">
+        <h2>FIFO出库系统</h2>
+        <p>本系统将根据先进先出原则，推荐最优的出库顺序，以减少产品过期风险。</p>
+        
+        <div class="form-group">
+            <label for="product_id">选择产品:</label>
+            <select id="product_id" required>
+                <option value="">-- 请选择产品 --</option>
+                {% for product in products %}
+                <option value="{{ product.id }}">{{ product.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="quantity">出库数量:</label>
+            <input type="number" id="quantity" required min="1">
+        </div>
+        
+        <button type="button" onclick="getSuggestion()">获取出库建议</button>
+        
+        <div id="error-message" class="error-message"></div>
+        
+        <table id="suggestion-table" class="suggestion-table">
+            <thead>
+                <tr>
+                    <th>存放位置</th>
+                    <th>建议取出数量</th>
+                    <th>入库日期</th>
+                    <th>过期日期</th>
+                </tr>
+            </thead>
+            <tbody id="suggestion-body">
+                <!-- 建议结果会动态添加到这里 -->
+            </tbody>
+        </table>
+        
+        <form id="outbound-form" action="/company/outbound/execute" method="post" style="display: none;">
+            <input type="hidden" id="form_product_id" name="product_id">
+            <input type="hidden" id="form_quantity" name="quantity">
+            <input type="hidden" id="inventory_data" name="inventory_data">
+            
+            <button type="submit">确认出库</button>
+        </form>
+    </div>
+    
+    <a href="/" class="back-link">返回首页</a>
+    
+    <script>
+    async function getSuggestion() {
+        const productId = document.getElementById('product_id').value;
+        const quantity = document.getElementById('quantity').value;
+        const errorElement = document.getElementById('error-message');
+        const suggestionTable = document.getElementById('suggestion-table');
+        const outboundForm = document.getElementById('outbound-form');
+        
+        if (!productId || !quantity || quantity < 1) {
+            errorElement.textContent = '请选择产品并输入有效的出库数量';
+            errorElement.style.display = 'block';
+            suggestionTable.style.display = 'none';
+            outboundForm.style.display = 'none';
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/company/outbound/suggestion/${productId}/${quantity}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                errorElement.textContent = data.error;
+                errorElement.style.display = 'block';
+                suggestionTable.style.display = 'none';
+                outboundForm.style.display = 'none';
+                return;
+            }
+            
+            // 清空之前的建议
+            const suggestionBody = document.getElementById('suggestion-body');
+            suggestionBody.innerHTML = '';
+            
+            // 添加新的建议
+            let inventoryData = [];
+            data.suggestions.forEach(item => {
+                const row = document.createElement('tr');
+                
+                const locationCell = document.createElement('td');
+                locationCell.textContent = item.location;
+                row.appendChild(locationCell);
+                
+                const quantityCell = document.createElement('td');
+                quantityCell.textContent = item.quantity;
+                row.appendChild(quantityCell);
+                
+                const entryDateCell = document.createElement('td');
+                entryDateCell.textContent = item.entry_date;
+                row.appendChild(entryDateCell);
+                
+                const expiryDateCell = document.createElement('td');
+                expiryDateCell.textContent = item.expiry_date;
+                row.appendChild(expiryDateCell);
+                
+                suggestionBody.appendChild(row);
+                
+                // 收集库存数据用于表单提交
+                inventoryData.push(`${item.inventory_id}:${item.quantity}`);
+            });
+            
+            // 显示建议表和确认按钮
+            errorElement.style.display = 'none';
+            suggestionTable.style.display = 'table';
+            outboundForm.style.display = 'block';
+            
+            // 设置表单隐藏字段
+            document.getElementById('form_product_id').value = productId;
+            document.getElementById('form_quantity').value = quantity;
+            document.getElementById('inventory_data').value = inventoryData.join(',');
+            
+        } catch (error) {
+            errorElement.textContent = '获取建议时出错，请重试';
+            errorElement.style.display = 'block';
+            suggestionTable.style.display = 'none';
+            outboundForm.style.display = 'none';
+        }
+    }
+    </script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/register-sw.js"></script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+from ...core.config import BASE_PATH
+from fastapi import APIRouter, Request, Depends, Query, HTTPException
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from typing import Optional
+import logging
+
+from ...core.deps import get_db, get_current_admin, get_current_employee
+from ...db import models
+
+router = APIRouter()
+
+# 创建日志记录器
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("barcode_api")
+
+# 检查条形码是否已存在
+@router.get("/admin/api/check-barcode")
+async def check_barcode(
+    barcode: str,
+    exclude_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """检查条形码是否已被使用"""
+    query = db.query(models.Product).filter(models.Product.barcode == barcode)
+    
+    # 如果提供了排除ID，则排除该产品
+    if exclude_id:
+        query = query.filter(models.Product.id != exclude_id)
+    
+    product = query.first()
+    
+    if product:
+        return {
+            "exists": True,
+            "product_id": product.id,
+            "product_name": product.name
+        }
+    else:
+        return {"exists": False}
+
+# 通过条形码获取产品信息
+@router.get("/api/product-by-barcode")
+async def get_product_by_barcode(
+    barcode: str,
+    db: Session = Depends(get_db)
+):
+    """根据条形码获取产品信息"""
+    product = db.query(models.Product).filter(models.Product.barcode == barcode).first()
+    
+    if not product:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "未找到该条形码对应的产品"}
+        )
+    
+    return {
+        "success": True,
+        "product": {
+            "id": product.id,
+            "name": product.name,
+            "description": product.description,
+            "price": product.price,
+            "stock": product.stock,
+            "image_url": product.image_url,
+            "unit_type": product.unit_type,
+            "expiry_days": product.expiry_days,
+            "barcode": product.barcode
+        }
+    }

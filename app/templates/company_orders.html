@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .orders-table th, .orders-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .orders-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .orders-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .orders-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .status-pending {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .status-confirmed {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        .status-shipped {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .view-link {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .view-link:hover {
+            background-color: #0056b3;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>订单管理</h1>
+    
+    <table class="orders-table">
+        <thead>
+            <tr>
+                <th>订单ID</th>
+                <th>餐馆名称</th>
+                <th>联系电话</th>
+                <th>提交时间</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.restaurant_name }}</td>
+                <td>{{ order.contact_phone }}</td>
+                <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    {% if order.status == 'pending' %}
+                    <span class="status-pending">待确认</span>
+                    {% elif order.status == 'confirmed' %}
+                    <span class="status-confirmed">已确认</span>
+                    {% elif order.status == 'shipped' %}
+                    <span class="status-shipped">已发货</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="/company/order/{{ order.id }}" class="view-link">查看详情</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <a href="/" class="back-link">返回首页</a>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/register-sw.js"></script>
+</body>
+</html>

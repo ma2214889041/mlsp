@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA测试</title>
+  <link rel="manifest" href="/mlsp/static/client-manifest.json">
+  <meta name="theme-color" content="#dc3545">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 8px; }
+    button { background: #0d6efd; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+    .btn-group { margin: 20px 0; }
+    .btn-group a { display: inline-block; text-decoration: none; padding: 10px 15px; margin-right: 10px; 
+                  color: white; border-radius: 5px; }
+    .client { background-color: #dc3545; }
+    .admin { background-color: #0d6efd; }
+    .employee { background-color: #198754; }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+  </style>
+</head>
+<body>
+  <h1>米兰食品公司 PWA 测试</h1>
+  
+  <div class="card">
+    <h2>Service Worker</h2>
+    <p id="sw-status">正在检查...</p>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/mlsp/static/sw.js')
+          .then(reg => {
+            document.getElementById('sw-status').innerHTML = 
+              '<span class="success">✓ Service Worker已注册</span><br>作用域: ' + reg.scope;
+          })
+          .catch(err => {
+            document.getElementById('sw-status').innerHTML = 
+              '<span class="error">✗ Service Worker注册失败</span><br>' + err;
+          });
+      } else {
+        document.getElementById('sw-status').innerHTML = 
+          '<span class="error">✗ 浏览器不支持Service Worker</span>';
+      }
+    </script>
+  </div>
+  
+  <div class="card">
+    <h2>安装PWA</h2>
+    <p id="install-status">检查中...</p>
+    <button id="install-btn" style="display:none;" onclick="installPWA()">安装应用</button>
+    
+    <script>
+      let deferredPrompt;
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // 阻止自动显示安装提示
+        e.preventDefault();
+        // 保存事件以便稍后触发
+        deferredPrompt = e;
+        
+        document.getElementById('install-status').innerHTML = 
+          '<span class="success">✓ 此应用可以安装到主屏幕</span>';
+        document.getElementById('install-btn').style.display = 'block';
+      });
+      
+      // 检查是否已安装
+      if (window.matchMedia('(display-mode: standalone)').matches || 
+          window.navigator.standalone === true) {
+        document.getElementById('install-status').innerHTML = 
+          '<span class="info">ℹ 此应用已安装到主屏幕</span>';
+      }
+      
+      // 5秒后检查
+      setTimeout(() => {
+        if (document.getElementById('install-status').innerHTML === '检查中...') {
+          document.getElementById('install-status').innerHTML = 
+            '⚠️ 未检测到安装事件。可能原因：<br>- 已安装<br>- 已拒绝安装<br>- 浏览器不支持<br>- 不满足安装条件';
+        }
+      }, 5000);
+      
+      function installPWA() {
+        if (!deferredPrompt) {
+          alert('无法触发安装提示');
+          return;
+        }
+        
+        // 显示安装提示
+        deferredPrompt.prompt();
+        
+        // 等待用户响应
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('install-status').innerHTML = 
+              '<span class="success">✓ 应用已成功安装</span>';
+          } else {
+            document.getElementById('install-status').innerHTML = 
+              '<span class="error">✗ 用户拒绝安装</span>';
+          }
+          // 清除提示，它只能使用一次
+          deferredPrompt = null;
+          document.getElementById('install-btn').style.display = 'none';
+        });
+      }
+      
+      // 监听应用安装事件
+      window.addEventListener('appinstalled', (evt) => {
+        document.getElementById('install-status').innerHTML = 
+          '<span class="success">✓ 应用已成功安装</span>';
+        document.getElementById('install-btn').style.display = 'none';
+      });
+    </script>
+  </div>
+  
+  <div class="card">
+    <h2>访问应用</h2>
+    <div class="btn-group">
+      <a href="/mlsp/client/" class="client">客户端</a>
+      <a href="/mlsp/admin/" class="admin">管理端</a>
+      <a href="/mlsp/employee/" class="employee">仓库端</a>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>清除Service Worker</h2>
+    <p>如果遇到问题，可以尝试清除当前注册的Service Worker：</p>
+    <button onclick="clearServiceWorker()">清除Service Worker</button>
+    <p id="clear-result"></p>
+    
+    <script>
+      function clearServiceWorker() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            const promises = registrations.map(registration => registration.unregister());
+            Promise.all(promises).then(() => {
+              document.getElementById('clear-result').innerHTML = 
+                '<span class="success">已清除所有Service Worker</span><br>请刷新页面重新注册';
+            });
+          });
+        }
+      }
+    </script>
+  </div>
+</body>
+</html>

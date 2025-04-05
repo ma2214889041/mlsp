@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# 应用上述所有配置文件更改
+
+# 清理浏览器缓存
+echo "更新PWA配置文件..."
+
+# 此处粘贴上面所有的文件修改命令
+# ...
+
+# 运行更新PWA头部和重启应用程序
+bash /home/mlsp/update_pwa_headers.sh
+bash /home/mlsp/stop.sh
+bash /home/mlsp/start.sh
+
+# 创建指南页面
+cat > /home/mlsp/app/static/pwa-guide.html << 'EOL'
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA安装指南</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 20px; }
+    .step { margin-bottom: 20px; }
+    .warning { background-color: #fff3cd; padding: 10px; border-radius: 5px; margin: 15px 0; }
+    img { max-width: 100%; }
+  </style>
+</head>
+<body>
+  <h1>米兰食品公司PWA安装指南</h1>
+  
+  <div class="card">
+    <h2>如何安装PWA应用</h2>
+    <p>PWA (Progressive Web App) 是一种可以像原生应用一样安装到您设备上的网页应用。</p>
+    
+    <div class="warning">
+      <strong>注意：</strong> 您可能需要先清除浏览器缓存，以确保获取最新的PWA配置。
+    </div>
+    
+    <h3>清除浏览器缓存</h3>
+    <div class="step">
+      <p><strong>Chrome浏览器：</strong></p>
+      <ol>
+        <li>打开Chrome设置 (右上角三个点)</li>
+        <li>选择"隐私设置和安全性"</li>
+        <li>选择"清除浏览数据"</li>
+        <li>勾选"缓存的图片和文件"</li>
+        <li>点击"清除数据"</li>
+      </ol>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>应用入口</h2>
+    <p>米兰食品公司有三个独立的应用入口，每个都可以单独安装：</p>
+    
+    <div class="step">
+      <h3>1. 客户端</h3>
+      <p><a href="/mlsp/client/">点击访问客户端</a></p>
+      <p>适合餐馆用户下单使用。</p>
+    </div>
+    
+    <div class="step">
+      <h3>2. 管理端</h3>
+      <p><a href="/mlsp/admin/">点击访问管理端</a></p>
+      <p>适合管理员使用。</p>
+    </div>
+    
+    <div class="step">
+      <h3>3. 仓库端</h3>
+      <p><a href="/mlsp/employee/">点击访问仓库端</a></p>
+      <p>适合仓库员工使用。</p>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>安装步骤</h2>
+    
+    <div class="step">
+      <h3>在Chrome浏览器上安装 (Android)</h3>
+      <ol>
+        <li>打开相应的应用入口 (客户端、管理端或仓库端)</li>
+        <li>点击地址栏右侧的安装图标或菜单中的"安装应用"选项</li>
+        <li>在弹出的提示中点击"安装"</li>
+      </ol>
+    </div>
+    
+    <div class="step">
+      <h3>在Safari浏览器上安装 (iOS)</h3>
+      <ol>
+        <li>打开相应的应用入口 (客户端、管理端或仓库端)</li>
+        <li>点击底部的分享按钮</li>
+        <li>向下滚动并选择"添加到主屏幕"</li>
+        <li>点击右上角的"添加"</li>
+      </ol>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>常见问题</h2>
+    
+    <div class="step">
+      <h3>我看不到安装选项</h3>
+      <p>可能的原因：</p>
+      <ul>
+        <li>您已经安装了该应用</li>
+        <li>您的浏览器不支持PWA</li>
+        <li>网站配置有问题（请先清除浏览器缓存再试）</li>
+      </ul>
+    </div>
+    
+    <div class="step">
+      <h3>安装一个应用后，无法安装其他应用</h3>
+      <p>解决方法：</p>
+      <ol>
+        <li>清除浏览器缓存</li>
+        <li>卸载已安装的应用</li>
+        <li>重新访问相应入口</li>
+        <li>重新安装需要的应用</li>
+      </ol>
+    </div>
+  </div>
+</body>
+</html>
+EOL
+
+echo "PWA模块修复完成!请访问以下页面查看安装指南:"
+echo "https://ritmohub.cn/mlsp/static/pwa-guide.html"

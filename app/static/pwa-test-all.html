@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA 所有端口测试</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; }
+    .btn { display: inline-block; padding: 10px 15px; margin: 5px; text-decoration: none; color: white;
+           border-radius: 5px; font-weight: bold; }
+    .btn-client { background-color: #dc3545; }
+    .btn-admin { background-color: #0d6efd; }
+    .btn-employee { background-color: #198754; }
+    .status { font-weight: bold; }
+    .success { color: green; }
+    .error { color: red; }
+    .frame { border: 1px solid #ddd; width: 100%; height: 300px; }
+  </style>
+</head>
+<body>
+  <h1>米兰食品公司PWA测试</h1>
+  <p>请选择要测试的入口：</p>
+  
+  <div class="card">
+    <h2>客户端</h2>
+    <p>点击按钮访问客户端入口，然后使用浏览器安装PWA功能将其安装至主屏幕</p>
+    <a href="/mlsp/client/" class="btn btn-client">访问客户端</a>
+    <img src="/mlsp/static/icons/client.png" alt="客户端图标" width="50">
+  </div>
+  
+  <div class="card">
+    <h2>管理端</h2>
+    <p>点击按钮访问管理端入口，然后使用浏览器安装PWA功能将其安装至主屏幕</p>
+    <a href="/mlsp/admin/" class="btn btn-admin">访问管理端</a>
+    <img src="/mlsp/static/icons/admin.png" alt="管理端图标" width="50">
+  </div>
+  
+  <div class="card">
+    <h2>仓库端</h2>
+    <p>点击按钮访问仓库端入口，然后使用浏览器安装PWA功能将其安装至主屏幕</p>
+    <a href="/mlsp/employee/" class="btn btn-employee">访问仓库端</a>
+    <img src="/mlsp/static/icons/employee.png" alt="仓库端图标" width="50">
+  </div>
+  
+  <div class="card">
+    <h2>Service Worker 状态</h2>
+    <p id="sw-status">检查中...</p>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          const statusElem = document.getElementById('sw-status');
+          if (registrations.length > 0) {
+            statusElem.innerHTML = '✅ 已注册的Service Workers:<br>';
+            registrations.forEach(reg => {
+              statusElem.innerHTML += `- 作用域: ${reg.scope}<br>`;
+            });
+            statusElem.className = 'status success';
+          } else {
+            statusElem.textContent = '❌ 未找到已注册的Service Worker';
+            statusElem.className = 'status error';
+          }
+        });
+      } else {
+        document.getElementById('sw-status').textContent = '❌ 浏览器不支持Service Worker';
+        document.getElementById('sw-status').className = 'status error';
+      }
+    </script>
+  </div>
+</body>
+</html>

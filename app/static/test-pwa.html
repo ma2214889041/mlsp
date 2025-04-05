@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA测试页面</title>
+  <link rel="manifest" href="/mlsp/static/client-manifest.json">
+  <meta name="theme-color" content="#dc3545">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <script>
+    // 注册测试Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/mlsp/static/test-sw.js', {
+          scope: '/mlsp/'
+        }).then(function(registration) {
+          console.log('Test Service Worker 注册成功!', registration);
+          document.getElementById('sw-status').textContent = '✅ 测试Service Worker已注册!';
+        }).catch(function(error) {
+          console.error('Test Service Worker 注册失败:', error);
+          document.getElementById('sw-status').textContent = '❌ 测试Service Worker注册失败: ' + error;
+        });
+      });
+    }
+    
+    // 监听安装提示
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      console.log('beforeinstallprompt触发!');
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('install-status').textContent = '✅ 可以安装!';
+      document.getElementById('install-btn').style.display = 'block';
+    });
+    
+    function installPWA() {
+      if (!deferredPrompt) {
+        alert('无法触发安装提示');
+        return;
+      }
+      
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('用户接受安装');
+        } else {
+          console.log('用户拒绝安装');
+        }
+        deferredPrompt = null;
+      });
+    }
+  </script>
+</head>
+<body>
+  <h1>PWA测试页面</h1>
+  <p>Service Worker状态: <span id="sw-status">正在检查...</span></p>
+  <p>安装状态: <span id="install-status">正在检查...</span></p>
+  <button id="install-btn" onclick="installPWA()" style="display:none;">安装PWA</button>
+  
+  <script>
+    // 设置超时检查
+    setTimeout(() => {
+      if (document.getElementById('install-status').textContent === '正在检查...') {
+        document.getElementById('install-status').textContent = '⚠️ 未触发beforeinstallprompt事件';
+      }
+    }, 3000);
+  </script>
+</body>
+</html>

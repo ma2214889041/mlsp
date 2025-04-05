@@ -1,0 +1,17 @@
+{
+  "name": "米兰食品公司 - 管理后台",
+  "short_name": "米兰管理端",
+  "description": "米兰食品公司订单与库存管理系统",
+  "start_url": "/mlsp/admin/",
+  "scope": "/mlsp/admin/",
+  "display": "standalone",
+  "background_color": "#343a40",
+  "theme_color": "#0d6efd",
+  "icons": [
+    {
+      "src": "/mlsp/static/icons/admin.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+<!-- PWA支持 -->
+<link rel="manifest" href="/mlsp/static/employee-manifest.json">
+<meta name="theme-color" content="#198754">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰仓库端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/employee.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/mlsp/employee/sw.js', {
+      scope: '/mlsp/employee/'
+    }).then(function(registration) {
+      console.log('仓库端Service Worker 注册成功，作用域为: ', registration.scope);
+    }).catch(function(error) {
+      console.error('仓库端Service Worker 注册失败: ', error);
+    });
+  });
+}
+</script>

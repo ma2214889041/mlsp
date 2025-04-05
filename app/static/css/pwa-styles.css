@@ -1,0 +1,40 @@
+/* PWA特定样式 */
+@media all and (display-mode: standalone), all and (display-mode: fullscreen) {
+  /* 在PWA模式下隐藏某些UI元素 */
+  .navbar .auth-buttons a[href="/logout"] {
+    display: none !important;
+  }
+  
+  /* 增加底部安全区域的内边距（适用于iPhone X以上机型） */
+  .bottom-navbar {
+    padding-bottom: env(safe-area-inset-bottom, 10px) !important;
+  }
+  
+  /* 增加导航栏的内边距 */
+  .navbar {
+    padding-top: env(safe-area-inset-top, 10px) !important;
+  }
+}
+
+/* 禁用点击高亮效果 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 改进触摸目标大小 */
+button, .btn, a.btn, .nav-link, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px 16px;
+}
+
+/* 移动优化：更好的滚动体验 */
+html, body {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* 防止iOS缩放 */
+input, select, textarea {
+  font-size: 16px !important;
+}

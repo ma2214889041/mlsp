@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰管理端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/admin.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单详情 #{{ order.id }} - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            padding: 20px 0;
+            background: #343a40;
+            color: white;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #495057;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.75);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: #0d6efd;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 24px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .content-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .order-item {
+            padding: 12px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .picker-items {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        .shelf-tag {
+            display: inline-block;
+            background-color: #17a2b8;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        .time-suggestion {
+            display: inline-block;
+            margin: 0 5px 5px 0;
+            padding: 5px 10px;
+            background-color: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .time-suggestion:hover {
+            background-color: #cce5ff;
+        }
+        .custom-pickup-times {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .order-photos {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+        }
+        .order-photo {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .order-photo:hover {
+            transform: scale(1.02);
+        }
+        .photo-modal-img {
+            max-width: 100%;
+            max-height: 80vh;
+        }
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-shop"></i> 米兰食品公司</h4>
+            <div class="text-muted">管理后台</div>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/dashboard">
+                    <i class="bi bi-speedometer2"></i> 仪表盘
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/mlsp/admin/orders">
+                    <i class="bi bi-list-check"></i> 订单管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/products">
+                    <i class="bi bi-box"></i> 产品管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/inventory">
+                    <i class="bi bi-clipboard-data"></i> 库存管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/shelves">
+                    <i class="bi bi-grid-3x3"></i> 货架管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/restaurants">
+                    <i class="bi bi-shop"></i> 餐馆管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/employees">
+                    <i class="bi bi-people"></i> 员工管理
+                </a>
+            </li>
+            <li class="nav-item mt-5">
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-left"></i> 退出登录
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>订单详情 #{{ order.id }}</h2>
+            <a href="/mlsp/admin/orders" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 返回订单列表
+            </a>
+        </div>
+
+        <div class="row">
+            <!-- 订单信息 -->
+            <div class="col-md-8">
+                <div class="content-card mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">订单状态</h5>
+                        {% if order.status == "pending" %}
+                        <span class="badge bg-warning text-dark px-3 py-2">待确认</span>
+                        {% elif order.status == "confirmed" %}
+                        <span class="badge bg-info px-3 py-2">已确认</span>
+                        {% elif order.status == "completed" %}
+                        <span class="badge bg-success px-3 py-2">已完成</span>
+                        {% elif order.status == "cancelled" %}
+                        <span class="badge bg-danger px-3 py-2">已取消</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">订单创建时间:</p>
+                            <p class="mb-3">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            
+                            {% if order.confirmed_at %}
+                            <p class="text-muted mb-1">订单确认时间:</p>
+                            <p class="mb-3">{{ order.confirmed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            {% endif %}
+                            
+                            {% if order.completed_at %}
+                            <p class="text-muted mb-1">订单完成时间:</p>
+                            <p class="mb-3">{{ order.completed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            {% endif %}
+                            
+                            {% if order.cancelled_at %}
+                            <p class="text-muted mb-1">订单取消时间:</p>
+                            <p class="mb-3">{{ order.cancelled_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            
+                            <p class="text-muted mb-1">取消原因:</p>
+                            <p class="mb-3">{{ order.cancel_reason }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <p class="text-muted mb-1">订单总金额:</p>
+                            <p class="fw-bold text-danger mb-3">¥{{ order.total_amount }}</p>
+                            
+                            {% if order.note %}
+                            <p class="text-muted mb-1">订单备注:</p>
+                            <div class="alert alert-light mb-3">{{ order.note }}</div>
+                            {% endif %}
+                            
+                            {% if order.pickup_time %}
+                            <p class="text-muted mb-1">取货时间:</p>
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-clock"></i> {{ order.pickup_time }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex flex-wrap mt-3">
+                        {% if order.status == "pending" %}
+                        <form action="/mlsp/admin/order/{{ order.id }}/confirm" method="post" class="me-2 mb-2">
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal">
+                                <i class="bi bi-check-circle"></i> 确认订单
+                            </button>
+                        </form>
+                        
+                        <button type="button" class="btn btn-danger me-2 mb-2" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="bi bi-x-circle"></i> 取消订单
+                        </button>
+                        {% elif order.status == "confirmed" %}
+                        <form action="/mlsp/admin/order/{{ order.id }}/complete" method="post" class="me-2 mb-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-all"></i> 标记为已完成
+                            </button>
+                        </form>
+                        
+                        <button type="button" class="btn btn-info me-2 mb-2" data-bs-toggle="modal" data-bs-target="#pickupModal">
+                            <i class="bi bi-clock"></i> 
+                            {% if order.pickup_time %}
+                            修改取货时间
+                            {% else %}
+                            设置取货时间
+                            {% endif %}
+                        </button>
+                        
+                        <button type="button" class="btn btn-outline-danger me-2 mb-2" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="bi bi-x-circle"></i> 取消订单
+                        </button>
+                        {% endif %}
+                        
+                        {% if inventory_suggestions %}
+                        <a href="/mlsp/admin/order/{{ order.id }}/picking" target="_blank" class="btn btn-warning mb-2">
+                            <i class="bi bi-printer"></i> 打印取货单
+                        </a>
+                        {% endif %}
+                    </div>
+                    
+                    {% if inventory_suggestions %}
+                    <div class="picker-items">
+                        <h6 class="mb-3"><i class="bi bi-box-seam"></i> 取货建议 (按先进先出原则)</h6>
+                        <ul class="list-group">
+                            {% for suggestion in inventory_suggestions %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="fw-bold">{{ suggestion.product_name }}</span>
+                                    <span class="shelf-tag">{{ suggestion.shelf_info.shelf_name }}-{{ suggestion.shelf_info.shelf_location }}</span>
+                                </div>
+                                <div>
+                                    <span class="badge bg-primary rounded-pill">{{ suggestion.quantity }} {{ suggestion.unit_type|default('份') }}</span>
+                                    <small class="text-muted ms-2">到期: {{ suggestion.expiry_date }}</small>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- 订单照片部分 - 修改这里的查询逻辑 -->
+                    {% if order.status == "completed" %}
+                    <div class="order-photos">
+                        <h6 class="mb-3"><i class="bi bi-images"></i> 订单照片记录</h6>
+                        
+                        {% set photos = db.query(models.OrderPhoto).filter(models.OrderPhoto.order_id == order.id).all() %}
+                        
+                        {% if photos|length > 0 %}
+                        <div class="row">
+                            {% for photo in photos %}
+                            <div class="col-md-6 mb-3">
+                                <img src="{{ photo.photo_url }}" alt="订单照片 {{ loop.index }}" 
+                                     class="order-photo" onclick="showPhotoModal('{{ photo.photo_url }}')">
+                                <div class="text-center text-muted small">
+                                    {{ photo.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {% if photo.uploaded_by %}
+                                    {% set employee = db.query(models.Employee).filter(models.Employee.id == photo.uploaded_by).first() %}
+                                    {% if employee %}
+                                    由 {{ employee.name }} 上传
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 没有找到与此订单相关的照片记录
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 订单商品列表 -->
+                <div class="content-card">
+                    <h5 class="mb-3">订单商品</h5>
+                    
+                    {% for item in items %}
+                    <div class="order-item">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}" class="product-image">
+                            </div>
+                            <div class="col">
+                                <div class="fw-bold">{{ item.product.name }}</div>
+                                <div class="small text-muted">单价: ¥{{ item.unit_price }}</div>
+                            </div>
+                            <div class="col-auto text-end">
+                                <div>{{ item.quantity }} {{ item.unit_type|default('份') }}</div>
+                                <div class="fw-bold">¥{{ item.quantity * item.unit_price }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3 p-3 bg-light rounded">
+                        <div class="fw-bold">订单总金额:</div>
+                        <div class="fs-4 fw-bold text-danger">¥{{ order.total_amount }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 客户信息 -->
+            <div class="col-md-4">
+                <div class="content-card">
+                    <h5 class="mb-3">餐馆信息</h5>
+                    
+                    <p class="text-muted mb-1">餐馆名称:</p>
+                    <p class="fw-bold mb-3">{{ restaurant.name }}</p>
+                    
+                    <p class="text-muted mb-1">地址:</p>
+                    <p class="mb-3">{{ restaurant.address }}</p>
+                    
+                    <p class="text-muted mb-1">联系电话:</p>
+                    <p class="mb-3">{{ restaurant.phone }}</p>
+                    
+                    <div class="d-grid">
+                        <a href="/mlsp/admin/restaurants" class="btn btn-outline-primary">
+                            <i class="bi bi-shop"></i> 查看餐馆管理
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认订单模态框 -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmModalLabel">确认订单并设置取货时间</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="/mlsp/admin/order/{{ order.id }}/confirm" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="pickup_time" class="form-label">设置取货时间:</label>
+                            <input type="text" class="form-control datepicker" id="pickup_time" name="pickup_time" placeholder="选择日期和时间" required>
+                            <div class="form-text">请选择客户可以取货的日期和时间</div>
+                        </div>
+                        
+                        <div class="custom-pickup-times">
+                            <label class="form-label">快速选择:</label>
+                            <div>
+                                <span class="time-suggestion" data-time="今天下午2点">今天下午2点</span>
+                                <span class="time-suggestion" data-time="今天下午4点">今天下午4点</span>
+                                <span class="time-suggestion" data-time="明天上午10点">明天上午10点</span>
+                                <span class="time-suggestion" data-time="明天下午3点">明天下午3点</span>
+                                <span class="time-suggestion" data-time="后天上午9点">后天上午9点</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="submit" class="btn btn-primary">确认订单</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置取货时间模态框 -->
+    <div class="modal fade" id="pickupModal" tabindex="-1" aria-labelledby="pickupModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="pickupModalLabel">设置取货时间</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="/mlsp/admin/order/{{ order.id }}/set-pickup" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="pickup_time_update" class="form-label">取货时间:</label>
+                            <input type="text" class="form-control datepicker" id="pickup_time_update" name="pickup_time" placeholder="选择日期和时间" value="{{ order.pickup_time }}" required>
+                        </div>
+                        
+                        <div class="custom-pickup-times">
+                            <label class="form-label">快速选择:</label>
+                            <div>
+                                <span class="time-suggestion update-suggestion" data-time="今天下午2点">今天下午2点</span>
+                                <span class="time-suggestion update-suggestion" data-time="今天下午4点">今天下午4点</span>
+                                <span class="time-suggestion update-suggestion" data-time="明天上午10点">明天上午10点</span>
+                                <span class="time-suggestion update-suggestion" data-time="明天下午3点">明天下午3点</span>
+                                <span class="time-suggestion update-suggestion" data-time="后天上午9点">后天上午9点</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="submit" class="btn btn-primary">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 取消订单模态框 -->
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cancelModalLabel">取消订单</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="/mlsp/admin/order/{{ order.id }}/cancel" method="post">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="cancel_reason" class="form-label">取消原因:</label>
+                            <textarea class="form-control" id="cancel_reason" name="cancel_reason" rows="3" required></textarea>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 取消订单后，相关产品库存将会被恢复。此操作不可撤销。
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="submit" class="btn btn-danger">确认取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 照片查看模态框 -->
+    <div class="modal fade" id="photoViewerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">订单照片</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="订单照片" class="photo-modal-img">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化日期时间选择器
+            flatpickr(".datepicker", {
+                enableTime: true, // 启用时间选择
+                dateFormat: "Y-m-d H:i", // 日期时间格式
+                locale: "zh",
+                time_24hr: true, // 使用24小时制
+                minDate: "today",
+                defaultHour: 14, // 默认下午2点
+                minuteIncrement: 30, // 时间间隔30分钟
+                disableMobile: "true"
+            });
+            
+            // 绑定快速选择时间的点击事件
+            const timeSuggestions = document.querySelectorAll('.time-suggestion');
+            timeSuggestions.forEach(suggestion => {
+                suggestion.addEventListener('click', function() {
+                    const suggestedTime = this.getAttribute('data-time');
+                    const pickupTimeInput = document.getElementById('pickup_time');
+                    if (pickupTimeInput) {
+                        pickupTimeInput.value = suggestedTime;
+                    }
+                });
+            });
+            
+            // 修改时间模态框中的快速选择
+            const updateSuggestions = document.querySelectorAll('.update-suggestion');
+            updateSuggestions.forEach(suggestion => {
+                suggestion.addEventListener('click', function() {
+                    const suggestedTime = this.getAttribute('data-time');
+                    const pickupTimeInput = document.getElementById('pickup_time_update');
+                    if (pickupTimeInput) {
+                        pickupTimeInput.value = suggestedTime;
+                    }
+                });
+            });
+        });
+        
+        // 照片查看器功能
+        function showPhotoModal(photoUrl) {
+            const modalImage = document.getElementById('modalImage');
+            if (modalImage) {
+                modalImage.src = photoUrl;
+                
+                const photoModal = new bootstrap.Modal(document.getElementById('photoViewerModal'));
+                photoModal.show();
+            }
+        }
+    </script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/admin-pwa-install.js"></script>
+</body>
+</html>

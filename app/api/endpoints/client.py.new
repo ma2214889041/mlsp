@@ -1,0 +1,25 @@
+from fastapi import APIRouter, Request, Depends, Form, HTTPException, Response
+from sqlalchemy.orm import Session
+from typing import Optional
+from ...core.config import BASE_PATH
+from ...templates_factory import create_templates
+from ...core.deps import get_db, get_current_restaurant_or_none
+from ...crud import product, order, restaurant
+
+router = APIRouter()
+
+# 设置模板
+templates = create_templates()
+
+# 客户端首页
+@router.get("/", response_class=HTMLResponse)
+async def client_home(request: Request, db: Session = Depends(get_db)):
+    products_list = product.get_available_products(db)
+    return templates.TemplateResponse("client/index.html", {
+        "request": request, 
+        "products": products_list,
+        "base_path": BASE_PATH
+    })
+
+# 以下是剩余的路由处理函数，记得在每个templates.TemplateResponse中添加 "base_path": BASE_PATH
+# ...

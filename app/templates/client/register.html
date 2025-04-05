@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#dc3545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰客户端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/client.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- PWA支持 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="米兰客户端">
+<script>
+    window.addEventListener('load', function() {
+        console.log('ServiceWorker registration successful: ', registration.scope);
+        console.log('ServiceWorker registration failed: ', err);
+      });
+    });
+  }
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>注册 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        .auth-container {
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .auth-card {
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .form-control {
+            border-radius: 5px;
+            padding: 10px 15px;
+        }
+        .btn-register {
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+<link rel="stylesheet" href="/mlsp/static/css/mobile-app.css">
+<link rel="stylesheet" href="/mlsp/static/css/pwa-styles.css">
+</head>
+<body>
+    <div class="container auth-container my-4">
+        <div class="logo-container">
+            <div class="logo"><i class="bi bi-shop"></i> 米兰食品公司</div>
+            <p class="text-muted">餐馆专业供应商</p>
+        </div>
+
+        <div class="card auth-card">
+            <div class="card-body p-4">
+                <h4 class="card-title text-center mb-4">餐馆账户注册</h4>
+                
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+                {% endif %}
+                
+                <form method="post" action="/mlsp/client/register">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">餐馆名称</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">餐馆地址</label>
+                        <input type="text" class="form-control" id="address" name="address" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">联系电话</label>
+                        <input type="text" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="username" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                        <div class="form-text">用于登录系统的唯一用户名</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-danger btn-register">注册</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <p>已有账户? <a href="/mlsp/client/login" class="text-danger">立即登录</a></p>
+            <a href="/client" class="text-muted"><i class="bi bi-arrow-left"></i> 返回首页</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/mlsp/static/js/pwa-install-minimal.js"></script>
+<script src="/mlsp/static/js/pwa-mode.js"></script>
+<script src="/mlsp/static/js/add-to-homescreen.js"></script>
+<script src="/mlsp/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/client-pwa-install.js"></script>
+</body>
+</html>

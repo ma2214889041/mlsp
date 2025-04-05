@@ -1,0 +1,17 @@
+{
+  "name": "米兰食品公司 - 餐馆客户端",
+  "short_name": "米兰客户端",
+  "description": "米兰食品公司餐馆订购系统",
+  "start_url": "/mlsp/client/",
+  "scope": "/mlsp/client/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#dc3545",
+  "icons": [
+    {
+      "src": "/mlsp/static/icons/client.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

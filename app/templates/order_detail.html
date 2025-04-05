@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单详情</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .order-detail {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .info-row {
+            margin: 10px 0;
+        }
+        .info-label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .status-label {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-confirmed {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        .status-shipped {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .items-list {
+            border: 1px solid #eee;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            white-space: pre-line;
+        }
+        .action-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .action-btn:hover {
+            background-color: #218838;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>订单详情</h1>
+    
+    <div class="order-detail">
+        <div class="info-row">
+            <span class="info-label">订单ID:</span>
+            <span>{{ order.id }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">餐馆名称:</span>
+            <span>{{ order.restaurant_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">联系电话:</span>
+            <span>{{ order.contact_phone }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">提交时间:</span>
+            <span>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">状态:</span>
+            {% if order.status == 'pending' %}
+            <span class="status-label status-pending">待确认</span>
+            {% elif order.status == 'confirmed' %}
+            <span class="status-label status-confirmed">已确认</span>
+            {% elif order.status == 'shipped' %}
+            <span class="status-label status-shipped">已发货</span>
+            {% endif %}
+        </div>
+        
+        {% if order.confirmed_at %}
+        <div class="info-row">
+            <span class="info-label">确认时间:</span>
+            <span>{{ order.confirmed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        {% endif %}
+        
+        {% if order.shipped_at %}
+        <div class="info-row">
+            <span class="info-label">发货时间:</span>
+            <span>{{ order.shipped_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </div>
+        {% endif %}
+        
+        <h2>订单商品</h2>
+        <div class="items-list">{{ order.items }}</div>
+        
+        {% if order.status == 'pending' %}
+        <form action="/company/order/{{ order.id }}/confirm" method="post">
+            <button type="submit" class="action-btn">确认订单</button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <a href="/company/orders" class="back-link">返回订单列表</a>
+    <a href="/" class="back-link">返回首页</a>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/register-sw.js"></script>
+</body>
+</html>

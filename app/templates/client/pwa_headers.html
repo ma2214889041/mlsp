@@ -1,0 +1,21 @@
+<!-- PWA支持 -->
+<link rel="manifest" href="/mlsp/static/client-manifest.json">
+<meta name="theme-color" content="#dc3545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰客户端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/client.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/mlsp/client/sw.js', {
+      scope: '/mlsp/client/'
+    }).then(function(registration) {
+      console.log('客户端Service Worker 注册成功，作用域为: ', registration.scope);
+    }).catch(function(error) {
+      console.error('客户端Service Worker 注册失败: ', error);
+    });
+  });
+}
+</script>

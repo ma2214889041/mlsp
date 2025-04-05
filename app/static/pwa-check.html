@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA安装诊断</title>
+  <link rel="manifest" href="/mlsp/static/client-manifest.json">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; border-radius: 5px; padding: 15px; margin-bottom: 15px; }
+    .status { font-weight: bold; }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+    button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>PWA安装诊断</h1>
+  
+  <div class="card">
+    <h2>环境检测</h2>
+    <div>HTTPS: <span id="https-status" class="status"></span></div>
+    <div>Service Worker支持: <span id="sw-status" class="status"></span></div>
+    <div>安装API支持: <span id="install-status" class="status"></span></div>
+  </div>
+  
+  <div class="card">
+    <h2>Manifest文件</h2>
+    <div>Manifest加载: <span id="manifest-status" class="status"></span></div>
+    <pre id="manifest-content">加载中...</pre>
+  </div>
+  
+  <div class="card">
+    <h2>Service Worker</h2>
+    <div>注册状态: <span id="sw-reg-status" class="status"></span></div>
+    <div>控制页面: <span id="sw-control-status" class="status"></span></div>
+  </div>
+  
+  <div class="card">
+    <h2>安装测试</h2>
+    <p id="install-info">检查中...</p>
+    <button id="force-install" style="display:none;">手动触发安装</button>
+  </div>
+  
+  <script>
+    // 检查HTTPS
+    document.getElementById('https-status').textContent = 
+      location.protocol === 'https:' 
+        ? '✅ 使用HTTPS' 
+        : '❌ 未使用HTTPS (PWA需要HTTPS)';
+    document.getElementById('https-status').className = 
+      location.protocol === 'https:' ? 'status success' : 'status error';
+    
+    // 检查Service Worker支持
+    if ('serviceWorker' in navigator) {
+      document.getElementById('sw-status').textContent = '✅ 支持';
+      document.getElementById('sw-status').className = 'status success';
+    } else {
+      document.getElementById('sw-status').textContent = '❌ 不支持';
+      document.getElementById('sw-status').className = 'status error';
+    }
+    
+    // 检查安装API
+    if ('BeforeInstallPromptEvent' in window || 'onbeforeinstallprompt' in window) {
+      document.getElementById('install-status').textContent = '✅ 支持';
+      document.getElementById('install-status').className = 'status success';
+    } else {
+      document.getElementById('install-status').textContent = '⚠️ 未检测到 (可能在iOS或已安装)';
+      document.getElementById('install-status').className = 'status info';
+    }
+    
+    // 检查manifest
+    fetch('/mlsp/static/client-manifest.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+        document.getElementById('manifest-status').textContent = '✅ 已加载';
+        document.getElementById('manifest-status').className = 'status success';
+        return response.json();
+      })
+      .then(data => {
+        document.getElementById('manifest-content').textContent = JSON.stringify(data, null, 2);
+      })
+      .catch(err => {
+        document.getElementById('manifest-status').textContent = `❌ 加载失败: ${err.message}`;
+        document.getElementById('manifest-status').className = 'status error';
+        document.getElementById('manifest-content').textContent = '无法加载manifest文件';
+      });
+    
+    // 检查Service Worker注册
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration().then(registration => {
+        if (registration) {
+          document.getElementById('sw-reg-status').textContent = `✅ 已注册，作用域: ${registration.scope}`;
+          document.getElementById('sw-reg-status').className = 'status success';
+        } else {
+          document.getElementById('sw-reg-status').textContent = '❌ 未注册';
+          document.getElementById('sw-reg-status').className = 'status error';
+          
+          // 尝试注册Service Worker
+          navigator.serviceWorker.register('/mlsp/static/sw.js', {
+            scope: '/mlsp/'
+          }).then(newReg => {
+            document.getElementById('sw-reg-status').textContent = `✅ 已注册，作用域: ${newReg.scope}`;
+            document.getElementById('sw-reg-status').className = 'status success';
+          }).catch(err => {
+            document.getElementById('sw-reg-status').textContent += ` (自动注册失败: ${err.message})`;
+          });
+        }
+      });
+      
+      if (navigator.serviceWorker.controller) {
+        document.getElementById('sw-control-status').textContent = '✅ Service Worker控制此页面';
+        document.getElementById('sw-control-status').className = 'status success';
+      } else {
+        document.getElementById('sw-control-status').textContent = '⚠️ Service Worker尚未控制页面 (可能需要刷新)';
+        document.getElementById('sw-control-status').className = 'status info';
+      }
+    }
+    
+    // 检查安装状态
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      document.getElementById('install-info').textContent = '✅ 此PWA可以安装!';
+      document.getElementById('force-install').style.display = 'block';
+    });
+    
+    // 如果30秒内没有触发beforeinstallprompt
+    setTimeout(() => {
+      if (!deferredPrompt) {
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+          document.getElementById('install-info').textContent = 'ℹ️ 此PWA已经安装并在运行';
+        } else if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+          document.getElementById('install-info').textContent = 'ℹ️ iOS设备需要手动添加到主屏幕 (点击分享按钮→添加到主屏幕)';
+        } else {
+          document.getElementById('install-info').textContent = '⚠️ 未触发安装事件。可能原因: 已安装、已拒绝安装、不满足安装条件或使用不支持的浏览器';
+        }
+      }
+    }, 3000);
+    
+    // 手动安装按钮
+    document.getElementById('force-install').addEventListener('click', async () => {
+      if (!deferredPrompt) {
+        alert('无法触发安装提示。请确保使用支持的浏览器，且未安装此PWA。');
+        return;
+      }
+      
+      // 显示安装提示
+      deferredPrompt.prompt();
+      
+      // 等待用户响应
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`用户安装选择: ${outcome}`);
+      
+      // 使用后清除
+      deferredPrompt = null;
+      
+      if (outcome === 'accepted') {
+        document.getElementById('install-info').textContent = '✅ PWA安装成功!';
+        document.getElementById('force-install').style.display = 'none';
+      } else {
+        document.getElementById('install-info').textContent = '❌ 用户拒绝了安装';
+      }
+    });
+    
+    // 检测是否已作为PWA运行
+    if (window.matchMedia('(display-mode: standalone)').matches || 
+        window.navigator.standalone === true) {
+      document.getElementById('install-info').textContent = 'ℹ️ 此PWA已经安装并在运行';
+    }
+  </script>
+</body>
+</html>

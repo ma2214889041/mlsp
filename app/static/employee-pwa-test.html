@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>仓库端PWA测试</title>
+  <link rel="manifest" href="/mlsp/static/employee-manifest.json">
+  <meta name="theme-color" content="#198754">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="米兰仓库端">
+  <link rel="apple-touch-icon" href="/mlsp/static/icons/employee.png">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; }
+    .card { border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 8px; }
+    button { background: #198754; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+    a.btn { display: inline-block; text-decoration: none; padding: 10px 15px; background: #198754; color: white; border-radius: 5px; }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+  </style>
+  <script>
+    // 注册Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/mlsp/employee/sw.js', {
+          scope: '/mlsp/employee/'
+        }).then(function(registration) {
+          console.log('Service Worker 注册成功！', registration);
+          document.getElementById('sw-status').innerHTML = 
+            '<span class="success">✓ Service Worker 已注册</span><br>作用域: ' + registration.scope;
+        }).catch(function(error) {
+          console.error('Service Worker 注册失败:', error);
+          document.getElementById('sw-status').innerHTML = 
+            '<span class="error">✗ Service Worker 注册失败</span><br>' + error;
+        });
+      });
+    }
+  </script>
+</head>
+<body>
+  <h1>米兰仓库端 PWA 测试</h1>
+  <img src="/mlsp/static/icons/employee.png" alt="仓库端图标" width="128" style="display: block; margin: 0 auto;">
+  
+  <div class="card">
+    <h2>Service Worker</h2>
+    <p id="sw-status">正在检查Service Worker...</p>
+  </div>
+  
+  <div class="card">
+    <h2>安装PWA</h2>
+    <p id="install-status">正在检查安装状态...</p>
+    <button id="install-btn" style="display:none;" onclick="installPWA()">安装仓库端应用</button>
+    
+    <script>
+      let deferredPrompt;
+      
+      window.addEventListener('beforeinstallprompt', (e) => {
+        // 阻止Chrome自动显示安装提示
+        e.preventDefault();
+        
+        // 保存事件以便稍后触发
+        deferredPrompt = e;
+        
+        document.getElementById('install-status').innerHTML = 
+          '<span class="success">✓ 此应用可以安装到主屏幕</span>';
+        document.getElementById('install-btn').style.display = 'block';
+      });
+      
+      // 检查是否已安装
+      if (window.matchMedia('(display-mode: standalone)').matches || 
+          window.navigator.standalone === true) {
+        document.getElementById('install-status').innerHTML = 
+          '<span class="info">ℹ 此应用已安装到主屏幕</span>';
+      } else {
+        // 延迟检查
+        setTimeout(() => {
+          if (document.getElementById('install-status').textContent === '正在检查安装状态...') {
+            document.getElementById('install-status').innerHTML = 
+              '⚠️ 未检测到安装事件。可能已安装或不满足条件';
+          }
+        }, 3000);
+      }
+      
+      function installPWA() {
+        if (!deferredPrompt) {
+          alert('无法触发安装提示');
+          return;
+        }
+        
+        // 显示安装提示
+        deferredPrompt.prompt();
+        
+        // 等待用户响应
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('install-status').innerHTML = 
+              '<span class="success">✓ 应用已成功安装</span>';
+          } else {
+            document.getElementById('install-status').innerHTML = 
+              '<span class="error">✗ 用户拒绝安装</span>';
+          }
+          // 清除提示
+          deferredPrompt = null;
+          document.getElementById('install-btn').style.display = 'none';
+        });
+      }
+      
+      // 监听应用安装事件
+      window.addEventListener('appinstalled', (evt) => {
+        document.getElementById('install-status').innerHTML = 
+          '<span class="success">✓ 应用已成功安装</span>';
+        document.getElementById('install-btn').style.display = 'none';
+      });
+    </script>
+  </div>
+  
+  <div class="card">
+    <h2>访问应用</h2>
+    <p><a href="/mlsp/employee/" class="btn">进入仓库端</a></p>
+  </div>
+</body>
+</html>

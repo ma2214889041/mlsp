@@ -1,0 +1,720 @@
+# 完整的 admin.py 文件
+
+from fastapi import APIRouter, Request, Depends, Form, File, UploadFile, HTTPException
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+from typing import List, Optional
+import os
+import shutil
+import datetime
+from pathlib import Path
+
+from ...core.deps import get_db, get_current_admin
+from ...db import models
+from ...core.config import ADMIN_USERNAME, ADMIN_PASSWORD
+
+router = APIRouter()
+
+# 设置模板
+templates = Jinja2Templates(directory="/home/mlsp/app/templates")
+
+# 获取订单照片的辅助函数
+def get_order_photos(order_id, db: Session):
+    """获取特定订单的照片"""
+    photos = db.query(models.OrderPhoto).filter(
+        models.OrderPhoto.order_id == order_id
+    ).order_by(models.OrderPhoto.uploaded_at.desc()).all()
+    return photos
+
+# 更新库存
+@router.post("/inventory/update")
+async def admin_update_inventory(
+    request: Request,
+    product_id: int = Form(...),
+    add_stock: int = Form(...),
+    shelf_id: Optional[str] = Form(None),
+    slot_id: Optional[str] = Form(None),
+    expiry_date: str = Form(...),  # YYYY-MM-DD格式
+    batch_number: Optional[str] = Form(None),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    try:
+        from ...crud import inventory, product as product_crud
+        
+        # 解析过期日期
+        try:
+            expiry_date_obj = datetime.datetime.strptime(expiry_date, "%Y-%m-%d").date()
+        except ValueError:
+            # 使用默认过期日期（当前日期 + 产品的默认保质期）
+            prod = product_crud.get_product(db, product_id)
+            expiry_days = prod.expiry_days if prod and prod.expiry_days else 180
+            expiry_date_obj = datetime.datetime.now().date() + datetime.timedelta(days=expiry_days)
+        
+        # 获取产品的单位类型
+        prod = product_crud.get_product(db, product_id)
+        if not prod:
+            return RedirectResponse(url="./inventory?error=product_not_found", status_code=303)
+            
+        unit_type = prod.unit_type if prod else "份"
+        
+        # 处理空的slot_id
+        slot_id_int = None
+        if slot_id and slot_id.strip() and slot_id != "None" and slot_id != "null":
+            try:
+                slot_id_int = int(slot_id)
+            except ValueError:
+                slot_id_int = None
+        
+        # 创建库存记录
+        inventory.create_inventory(
+            db, 
+            product_id=product_id, 
+            slot_id=slot_id_int, 
+            quantity=add_stock, 
+            unit_type=unit_type,
+            expiry_date=expiry_date_obj,
+            batch_number=batch_number
+        )
+        
+        return RedirectResponse(url="./inventory", status_code=303)
+    except Exception as e:
+        return RedirectResponse(url=f"./inventory?error={str(e)}", status_code=303)
+
+# 管理员登录页面
+@router.get("/", response_class=HTMLResponse)
+@router.get("/login", response_class=HTMLResponse)
+async def admin_login(request: Request):
+    return templates.TemplateResponse("admin/login.html", {"request": request})
+
+# 管理员登录处理
+@router.post("/login")
+async def admin_login_post(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+):
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        response = RedirectResponse(url="./dashboard", status_code=303)
+        response.set_cookie(key="admin_authenticated", value="true")
+        return response
+    else:
+        return templates.TemplateResponse(
+            "admin/login.html", 
+            {"request": request, "error": "用户名或密码错误"}
+        )
+
+# 管理员仪表盘
+@router.get("/dashboard", response_class=HTMLResponse)
+async def admin_dashboard(
+    request: Request, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order, product, restaurant, shelf
+    
+    # 获取待处理订单数量
+    pending_orders = db.query(models.Order).filter(models.Order.status == "pending").count()
+    
+    # 获取产品总数
+    total_products = db.query(models.Product).count()
+    
+    # 获取餐馆总数
+    total_restaurants = db.query(models.Restaurant).count()
+    
+    # 获取最新订单
+    latest_orders = db.query(models.Order).order_by(models.Order.created_at.desc()).limit(5).all()
+    
+    # 获取库存预警产品
+    low_stock_products = db.query(models.Product).order_by(models.Product.stock).limit(5).all()
+    
+    return templates.TemplateResponse(
+        "admin/dashboard.html", 
+        {
+            "request": request, 
+            "pending_orders": pending_orders,
+            "total_products": total_products,
+            "total_restaurants": total_restaurants,
+            "latest_orders": latest_orders,
+            "low_stock_products": low_stock_products
+        }
+    )
+
+# 管理员订单列表页面
+@router.get("/orders", response_class=HTMLResponse)
+async def admin_orders(
+    request: Request, 
+    status: Optional[str] = None,
+    restaurant_id: Optional[int] = None,
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order
+    
+    # 获取订单列表
+    orders_list = order.get_orders(db, status=status, restaurant_id=restaurant_id)
+    
+    return templates.TemplateResponse(
+        "admin/orders.html", 
+        {"request": request, "orders": orders_list, "current_status": status}
+    )
+
+# 管理员订单详情页面
+@router.get("/order/{order_id}", response_class=HTMLResponse)
+async def admin_order_detail(
+    request: Request, 
+    order_id: int, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order, restaurant, inventory
+    
+    # 获取订单
+    order_obj = order.get_order(db, order_id)
+    if not order_obj:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    
+    # 获取餐馆信息
+    restaurant_obj = restaurant.get_restaurant(db, order_obj.restaurant_id)
+    
+    # 获取订单项目
+    order_items = order.get_order_items(db, order_id)
+    
+    # 获取库存取货建议
+    inventory_suggestions = []
+    if order_obj.status == "confirmed":
+        inventory_suggestions = inventory.get_inventory_for_order(db, order_id)
+    
+    # 获取订单照片
+    order_photos = get_order_photos(order_id, db)
+    
+    return templates.TemplateResponse(
+        "admin/order_detail.html", 
+        {
+            "request": request, 
+            "order": order_obj,
+            "restaurant": restaurant_obj,
+            "items": order_items,
+            "inventory_suggestions": inventory_suggestions,
+            "get_order_photos": get_order_photos,
+            "db": db,
+            "models": models
+        }
+    )
+
+# 确认订单
+@router.post("/order/{order_id}/confirm")
+async def admin_confirm_order(
+    request: Request,
+    order_id: int,
+    pickup_time: str = Form(...),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order
+    
+    # 确认订单
+    order.confirm_order(db, order_id, pickup_time)
+    
+    return RedirectResponse(url=f"../order/{order_id}", status_code=303)
+
+# 完成订单
+@router.post("/order/{order_id}/complete")
+async def admin_complete_order(
+    request: Request,
+    order_id: int,
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order
+    
+    # 完成订单
+    order.complete_order(db, order_id)
+    
+    return RedirectResponse(url=f"../order/{order_id}", status_code=303)
+
+# 取消订单
+@router.post("/order/{order_id}/cancel")
+async def admin_cancel_order(
+    request: Request,
+    order_id: int,
+    cancel_reason: str = Form(...),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order
+    
+    # 取消订单
+    order.cancel_order(db, order_id, cancel_reason)
+    
+    return RedirectResponse(url=f"../order/{order_id}", status_code=303)
+
+# 设置取货时间
+@router.post("/order/{order_id}/set-pickup")
+async def admin_set_pickup_time(
+    request: Request,
+    order_id: int,
+    pickup_time: str = Form(...),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order
+    
+    # 更新取货时间
+    order.update_pickup_time(db, order_id, pickup_time)
+    
+    return RedirectResponse(url=f"../order/{order_id}", status_code=303)
+
+# 管理员产品列表页面
+@router.get("/products", response_class=HTMLResponse)
+async def admin_products(
+    request: Request, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    # 获取产品列表
+    products_list = db.query(models.Product).all()
+    
+    return templates.TemplateResponse(
+        "admin/products.html", 
+        {"request": request, "products": products_list}
+    )
+
+# 添加产品页面
+@router.get("/product/add", response_class=HTMLResponse)
+async def admin_add_product(
+    request: Request, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    # 获取所有货架
+    shelves = db.query(models.Shelf).all()
+    
+    return templates.TemplateResponse(
+        "admin/add_product.html", 
+        {"request": request, "shelves": shelves}
+    )
+
+# 添加产品处理
+@router.post("/product/add")
+async def admin_add_product_post(
+    request: Request,
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    stock: int = Form(...),
+    expiry_days: int = Form(180),
+    shelf_id: Optional[str] = Form(None),
+    image: UploadFile = File(...),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import product
+    
+    # 保存产品图片
+    file_location = f"/home/mlsp/app/static/uploads/products/{image.filename}"
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+    
+    # 图片URL
+    image_url = f"/static/uploads/products/{image.filename}"
+    
+    # 创建产品
+    new_product = product.create_product(
+        db, 
+        name=name, 
+        description=description, 
+        price=price, 
+        stock=stock, 
+        image_url=image_url,
+        unit_type="份"  # 默认单位
+    )
+    
+    # 更新过期天数
+    if expiry_days:
+        product.update_product(db, new_product.id, expiry_days=expiry_days)
+    
+    # 如果选择了货架，创建初始库存
+    if shelf_id and stock > 0:
+        from ...crud import inventory
+        import datetime
+        
+        # 计算过期日期
+        expiry_date = datetime.datetime.now().date() + datetime.timedelta(days=expiry_days)
+        
+        # 创建库存记录
+        inventory.create_inventory(
+            db, 
+            product_id=new_product.id, 
+            slot_id=int(shelf_id) if shelf_id else None, 
+            quantity=stock, 
+            unit_type="份",
+            expiry_date=expiry_date
+        )
+    
+    return RedirectResponse(url="../products", status_code=303)
+
+# 编辑产品页面
+@router.get("/product/{product_id}/edit", response_class=HTMLResponse)
+async def admin_edit_product(
+    request: Request, 
+    product_id: int,
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import product
+    
+    # 获取产品信息
+    product_obj = product.get_product(db, product_id)
+    if not product_obj:
+        raise HTTPException(status_code=404, detail="产品不存在")
+    
+    # 获取所有货架
+    shelves = db.query(models.Shelf).all()
+    
+    return templates.TemplateResponse(
+        "admin/edit_product.html", 
+        {"request": request, "product": product_obj, "shelves": shelves}
+    )
+
+# 编辑产品处理
+@router.post("/product/{product_id}/edit")
+async def admin_edit_product_post(
+    request: Request,
+    product_id: int,
+    name: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    stock: int = Form(...),
+    is_active: bool = Form(False),
+    expiry_days: int = Form(180),
+    image: Optional[UploadFile] = File(None),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import product
+    
+    # 获取产品信息
+    product_obj = product.get_product(db, product_id)
+    if not product_obj:
+        raise HTTPException(status_code=404, detail="产品不存在")
+    
+    # 处理图片上传
+    image_url = product_obj.image_url
+    if image and image.filename:
+        file_location = f"/home/mlsp/app/static/uploads/products/{image.filename}"
+        with open(file_location, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+        image_url = f"/static/uploads/products/{image.filename}"
+    
+    # 更新产品信息
+    product.update_product(
+        db, 
+        product_id=product_id,
+        name=name,
+        description=description,
+        price=price,
+        stock=stock,
+        image_url=image_url,
+        is_active=is_active,
+        expiry_days=expiry_days
+    )
+    
+    return RedirectResponse(url="../../products", status_code=303)
+
+# 管理员库存管理页面
+@router.get("/inventory", response_class=HTMLResponse)
+async def admin_inventory(
+    request: Request, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import product
+    
+    # 获取所有产品
+    products_list = product.get_products(db)
+    
+    # 获取所有货架
+    shelves = db.query(models.Shelf).all()
+    
+    return templates.TemplateResponse(
+        "admin/inventory.html", 
+        {
+            "request": request, 
+            "products": products_list,
+            "shelves": shelves,
+            "now": datetime.datetime.now()
+        }
+    )
+
+
+# 管理员餐馆列表页面
+@router.get("/restaurants", response_class=HTMLResponse)
+async def admin_restaurants(
+    request: Request, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import restaurant
+    
+    # 获取所有餐馆
+    restaurants_list = restaurant.get_restaurants(db)
+    
+    return templates.TemplateResponse(
+        "admin/restaurants.html", 
+        {"request": request, "restaurants": restaurants_list}
+    )
+
+# 货架管理页面
+@router.get("/shelves", response_class=HTMLResponse)
+async def admin_shelves(
+    request: Request, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import shelf
+    
+    shelves_list = db.query(models.Shelf).all()
+    
+    # 获取货架统计数据
+    stats = shelf.get_shelf_stats(db)
+    
+    # 为每个货架设置slot的过期状态
+    for sh in shelves_list:
+        for slot in sh.slots:
+            # 检查slot是否有inventory属性和方法
+            if hasattr(slot, 'inventories') and slot.inventories:
+                for inv in slot.inventories:
+                    if inv.remaining > 0:
+                        slot.is_expired = inv.is_expired()
+                        slot.is_near_expiry = inv.is_near_expiry(30)
+                        break
+                else:
+                    slot.is_expired = False
+                    slot.is_near_expiry = False
+            elif hasattr(slot, 'inventory') and slot.inventory:
+                slot.is_expired = slot.inventory.is_expired()
+                slot.is_near_expiry = slot.inventory.is_near_expiry(30)
+            else:
+                slot.is_expired = False
+                slot.is_near_expiry = False
+    
+    return templates.TemplateResponse(
+        "admin/shelves.html", 
+        {
+            "request": request, 
+            "shelves": shelves_list,
+            "total_slots": stats["total_slots"],
+            "empty_slots": stats["empty_slots"]
+        }
+    )
+
+# 添加货架
+@router.post("/shelf/add")
+async def admin_add_shelf(
+    request: Request,
+    name: str = Form(...),
+    location: str = Form(...),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import shelf
+    
+    # 创建货架
+    new_shelf = shelf.create_shelf(db, name, location)
+    
+    return RedirectResponse(url="../shelves", status_code=303)
+
+# 编辑货架
+@router.post("/shelf/{shelf_id}/edit")
+async def admin_edit_shelf(
+    request: Request,
+    shelf_id: int,
+    name: str = Form(...),
+    location: str = Form(...),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import shelf
+    
+    # 更新货架
+    updated_shelf = shelf.update_shelf(db, shelf_id, name, location)
+    
+    return RedirectResponse(url="../../shelves", status_code=303)
+
+# 删除货架
+@router.post("/shelf/{shelf_id}/delete")
+async def admin_delete_shelf(
+    request: Request,
+    shelf_id: int,
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import shelf
+    
+    shelf.delete_shelf(db, shelf_id)
+    return RedirectResponse(url="../../shelves", status_code=303)
+
+# 添加货位
+@router.post("/shelf/{shelf_id}/add-slot")
+async def admin_add_shelf_slot(
+    request: Request,
+    shelf_id: int,
+    position: str = Form(...),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import shelf
+    
+    # 创建货位
+    new_slot = shelf.create_shelf_slot(db, shelf_id, position)
+    
+    return RedirectResponse(url="../../shelves", status_code=303)
+
+# 删除货位
+@router.post("/slot/{slot_id}/delete")
+async def admin_delete_slot(
+    request: Request,
+    slot_id: int,
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import shelf
+    
+    shelf.delete_shelf_slot(db, slot_id)
+    return RedirectResponse(url="../shelves", status_code=303)
+
+# 订单取货单生成
+@router.get("/order/{order_id}/picking", response_class=HTMLResponse)
+async def admin_order_picking(
+    request: Request, 
+    order_id: int, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    from ...crud import order, inventory
+    
+    # 获取订单
+    order_obj = order.get_order(db, order_id)
+    if not order_obj:
+        raise HTTPException(status_code=404, detail="订单不存在")
+    
+    # 获取餐馆信息
+    restaurant_obj = order_obj.restaurant
+    
+    # 获取库存取货建议
+    inventory_suggestions = inventory.get_inventory_for_order(db, order_id)
+    
+    return templates.TemplateResponse(
+        "admin/picking.html", 
+        {
+            "request": request, 
+            "order": order_obj,
+            "restaurant": restaurant_obj,
+            "inventory_suggestions": inventory_suggestions
+        }
+    )
+
+# 员工管理页面
+@router.get("/employees", response_class=HTMLResponse)
+async def admin_employees(
+    request: Request, 
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    # 获取所有员工
+    employees_list = db.query(models.Employee).all()
+    return templates.TemplateResponse(
+        "admin/employees.html", 
+        {"request": request, "employees": employees_list}
+    )
+
+# 添加员工
+@router.post("/employee/add")
+async def admin_add_employee(
+    request: Request,
+    name: str = Form(...),
+    username: str = Form(...),
+    password: str = Form(...),
+    position: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    is_active: bool = Form(False),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    # 检查用户名是否已存在
+    existing_employee = db.query(models.Employee).filter(models.Employee.username == username).first()
+    if existing_employee:
+        # 这里应该返回错误，但为了简化，我们直接重定向
+        return RedirectResponse(url="../employees?error=username_exists", status_code=303)
+    
+    # 创建新员工
+    new_employee = models.Employee(
+        name=name,
+        username=username,
+        password=password,
+        position=position,
+        phone=phone,
+        is_active=is_active,
+        created_at=datetime.datetime.now()
+    )
+    db.add(new_employee)
+    db.commit()
+    
+    return RedirectResponse(url="../employees", status_code=303)
+
+# 编辑员工
+@router.post("/employee/{employee_id}/edit")
+async def admin_edit_employee(
+    request: Request,
+    employee_id: int,
+    name: str = Form(...),
+    username: str = Form(...),
+    password: Optional[str] = Form(None),
+    position: Optional[str] = Form(None),
+    phone: Optional[str] = Form(None),
+    is_active: bool = Form(False),
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    # 检查是否存在
+    existing_employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+    if not existing_employee:
+        raise HTTPException(status_code=404, detail="员工不存在")
+    
+    # 如果修改了用户名，检查是否与其他员工冲突
+    if username != existing_employee.username:
+        username_check = db.query(models.Employee).filter(models.Employee.username == username).first()
+        if username_check and username_check.id != employee_id:
+            # 用户名已被使用
+            return RedirectResponse(url=f"../../employees?error=username_exists&id={employee_id}", status_code=303)
+    
+    # 更新员工信息
+    existing_employee.name = name
+    existing_employee.username = username
+    if password:
+        existing_employee.password = password
+    existing_employee.position = position
+    existing_employee.phone = phone
+    existing_employee.is_active = is_active
+    
+    db.commit()
+    
+    return RedirectResponse(url="../../employees", status_code=303)
+
+# 删除员工
+@router.post("/employee/{employee_id}/delete")
+async def admin_delete_employee(
+    request: Request,
+    employee_id: int,
+    is_admin: bool = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    employee = db.query(models.Employee).filter(models.Employee.id == employee_id).first()
+    if employee:
+        db.delete(employee)
+        db.commit()
+        
+    return RedirectResponse(url="../../employees", status_code=303)
