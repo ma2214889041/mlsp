@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰仓库端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/employee.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>订单 #{{ order.id }} - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-bottom: 70px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .info-card {
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .info-header {
+            padding: 12px 15px;
+            background-color: #f1f8ff;
+            border-bottom: 1px solid #e1e8f0;
+        }
+        .info-body {
+            padding: 15px;
+        }
+        .item-card {
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .item-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .item-header {
+            padding: 12px 15px;
+            font-weight: bold;
+        }
+        .item-body {
+            padding: 15px;
+        }
+        .item-footer {
+            padding: 12px 15px;
+            background-color: #fbfdff;
+            border-top: 1px solid #e1e8f0;
+        }
+        .shelf-tag {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .badge-large {
+            font-size: 0.9rem;
+            padding: 6px 10px;
+        }
+        .expired {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+        .near-expiry {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+        }
+        .sticky-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -3px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+            z-index: 1000;
+        }
+        .back-link {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .back-link i {
+            margin-right: 5px;
+        }
+        .pickup-time {
+            background-color: #e0f7fa;
+            border-left: 5px solid #00bcd4;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .picked-item {
+            background-color: #e8f5e9;
+            border-left: 5px solid #4caf50;
+        }
+        .shelf-qr-placeholder {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .shelf-qr-placeholder i {
+            font-size: 2rem;
+            color: #6c757d;
+        }
+        .photo-upload-box {
+            border: 2px dashed #0d6efd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .photo-upload-box:hover {
+            background-color: #f1f8ff;
+        }
+        .photo-upload-box i {
+            font-size: 3rem;
+            color: #0d6efd;
+            margin-bottom: 10px;
+        }
+        #preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/mlsp/employee/dashboard">
+                <i class="bi bi-box-seam"></i> 仓库工作台
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link">
+                    <i class="bi bi-person-circle"></i> {{ employee_name }}
+                </span>
+                <a class="nav-link" href="/mlsp/employee/scan">
+                    <i class="bi bi-qr-code-scan"></i> 扫码
+                </a>
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-right"></i> 退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container my-4 mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="/mlsp/employee/dashboard" class="back-link">
+                <i class="bi bi-arrow-left"></i> 返回
+            </a>
+            <h4>订单 #{{ order.id }}</h4>
+            <span class="badge bg-info badge-large">已确认</span>
+        </div>
+        
+        <!-- 订单信息 -->
+        <div class="info-card">
+            <div class="info-header">
+                <i class="bi bi-info-circle"></i> 订单信息
+            </div>
+            <div class="info-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <i class="bi bi-shop"></i> 餐馆: <strong>{{ restaurant.name }}</strong>
+                        </p>
+                        <p class="mb-2">
+                            <i class="bi bi-telephone"></i> 电话: {{ restaurant.phone }}
+                        </p>
+                        <p class="mb-2">
+                            <i class="bi bi-geo-alt"></i> 地址: {{ restaurant.address }}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <i class="bi bi-calendar-check"></i> 确认时间: {{ order.confirmed_at.strftime('%Y-%m-%d %H:%M') }}
+                        </p>
+                        {% if order.pickup_time %}
+                        <div class="pickup-time">
+                            <i class="bi bi-clock"></i> 取货时间: <strong>{{ order.pickup_time }}</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if order.note %}
+                <div class="alert alert-secondary mt-2">
+                    <i class="bi bi-card-text"></i> 备注: {{ order.note }}
+                </div>
+                {% endif %}
+                
+                {% if request.query_params.get('error') == 'not_all_picked' %}
+                <div class="alert alert-danger mt-2">
+                    <i class="bi bi-exclamation-triangle"></i> 请先完成所有商品的取货后再标记订单完成
+                </div>
+                {% endif %}
+                
+                {% if request.query_params.get('error') == 'no_photo' %}
+                <div class="alert alert-danger mt-2">
+                    <i class="bi bi-exclamation-triangle"></i> 请上传取货完成的照片后再标记订单完成
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 货架扫描区域 - 简化处理，默认认为已确认 -->
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle"></i> <span id="scannedShelfInfo">已确认货架位置</span>
+        </div>
+        
+        <!-- 取货项目 -->
+        <h5 class="mb-3 mt-4">取货清单</h5>
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i> 请按照先进先出原则取货，优先取用最早入库和接近过期的商品
+        </div>
+        
+        {% for suggestion in inventory_suggestions %}
+        <div class="item-card {% if suggestion.picked %}picked-item{% elif suggestion.is_expired %}expired{% elif suggestion.is_near_expiry %}near-expiry{% endif %}">
+            <div class="item-header bg-light d-flex justify-content-between">
+                <div>{{ suggestion.product_name }}</div>
+                <div>
+                    {% if suggestion.picked %}
+                    <span class="badge bg-success">已取货</span>
+                    {% elif suggestion.is_expired %}
+                    <span class="badge bg-danger">已过期</span>
+                    {% elif suggestion.is_near_expiry %}
+                    <span class="badge bg-warning text-dark">即将过期</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="item-body">
+                <div class="row">
+                    <div class="col-7">
+                        <p class="mb-1">
+                            <i class="bi bi-123"></i> 批次号: <span class="fw-bold">{{ suggestion.batch_number }}</span>
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-calendar-date"></i> 入库日期: {{ suggestion.entry_date }}
+                        </p>
+                        <p class="mb-1">
+                            <i class="bi bi-calendar-x"></i> 过期日期: 
+                            {% if suggestion.is_expired %}
+                            <span class="text-danger fw-bold">{{ suggestion.expiry_date }}</span>
+                            {% elif suggestion.is_near_expiry %}
+                            <span class="text-warning fw-bold">{{ suggestion.expiry_date }}</span>
+                            {% else %}
+                            {{ suggestion.expiry_date }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-5">
+                        <p class="mb-1">
+                            <i class="bi bi-box"></i> 数量: <span class="fw-bold">{{ suggestion.quantity }} {{ suggestion.unit_type }}</span>
+                        </p>
+                        {% if suggestion.shelf_info %}
+                        <div class="shelf-tag">
+                            <i class="bi bi-grid"></i> 
+                            {{ suggestion.shelf_info.shelf_name }} - {{ suggestion.shelf_info.shelf_location }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="item-footer">
+                {% if not suggestion.picked %}
+                <form action="/mlsp/employee/order/{{ order.id }}/item/{{ suggestion.order_item_id }}/pick" method="post" class="pick-form">
+                    <input type="hidden" name="inventory_id" value="{{ suggestion.inventory_id }}">
+                    <input type="hidden" name="quantity" value="{{ suggestion.quantity }}">
+                    <button type="submit" class="btn btn-success w-100 pick-button">
+                        <i class="bi bi-check2-circle"></i> 确认取货
+                    </button>
+                </form>
+                {% else %}
+                <button class="btn btn-outline-success w-100" disabled>
+                    <i class="bi bi-check-all"></i> 已完成
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if inventory_suggestions|length == 0 %}
+        <div class="alert alert-info text-center py-4">
+            <i class="bi bi-search" style="font-size: 2rem;"></i>
+            <p class="mt-3">没有需要取货的商品</p>
+        </div>
+        {% endif %}
+        
+<!-- 取货完成照片上传 -->
+<div class="mt-4">
+    <h5 class="mb-3">取货完成照片</h5>
+    
+    <div id="photo-upload-area" class="photo-upload-box" onclick="document.getElementById('photo-input').click()">
+        <input type="file" id="photo-input" accept="image/*" style="display: none;" onchange="previewPhoto(this)">
+        <i class="bi bi-camera"></i>
+        <p>点击上传订单完成照片</p>
+        <p class="small text-muted">拍摄或选择一张清晰的照片，显示已准备好的商品</p>
+    </div>
+    
+    <img id="preview-image" class="mt-3">
+    
+    <div id="upload-success" class="alert alert-success mt-3" style="display: none;">
+        <i class="bi bi-check-circle"></i> 照片上传成功
+    </div>
+    
+    <div id="upload-error" class="alert alert-danger mt-3" style="display: none;">
+        <i class="bi bi-exclamation-triangle"></i> <span id="error-message">上传失败</span>
+    </div>
+</div>
+
+<!-- 添加JavaScript代码 -->
+<script>
+    // 预览照片
+    function previewPhoto(input) {
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const preview = document.getElementById('preview-image');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                
+                // 自动上传照片
+                uploadPhoto(input.files[0]);
+            }
+            
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    // 上传照片
+// 上传照片
+async function uploadPhoto(file) {
+    const orderId = {{ order.id }};
+    const formData = new FormData();
+    formData.append('photo', file);
+    formData.append('order_id', orderId);
+    
+    try {
+        // 修改这行，添加/mlsp前缀
+        const response = await fetch('/mlsp/employee/upload-order-photo', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('upload-success').style.display = 'block';
+            document.getElementById('upload-error').style.display = 'none';
+            
+            // 设置表单隐藏字段的值为true
+            document.getElementById('photoUploadedInput').value = 'true';
+            
+            // 启用完成按钮
+            document.getElementById('completeButton').disabled = false;
+        } else {
+            document.getElementById('upload-success').style.display = 'none';
+            document.getElementById('upload-error').style.display = 'block';
+            document.getElementById('error-message').textContent = result.message || '上传失败';
+        }
+    } catch (error) {
+        console.error('上传照片时出错:', error);
+        document.getElementById('upload-success').style.display = 'none';
+        document.getElementById('upload-error').style.display = 'block';
+        document.getElementById('error-message').textContent = '网络错误，请重试';
+    }
+}
+</script>
+        
+        <!-- 固定在底部的完成按钮 - 移除禁用状态 -->
+        <div class="sticky-bottom">
+            <div class="container">
+                <form action="/mlsp/employee/order/{{ order.id }}/complete" method="post" id="completeForm">
+                    <input type="hidden" name="photo_uploaded" id="photoUploadedInput" value="true">
+                    <input type="hidden" name="shelf_confirmed" id="shelfConfirmedInput" value="true">
+                    <button type="submit" class="btn btn-primary btn-lg w-100" id="completeButton">
+                        <i class="bi bi-check-all"></i> 订单处理完成
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/employee-pwa-install.js"></script>
+</body>
+</html>

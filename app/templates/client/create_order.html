@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#dc3545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰客户端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/client.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- PWA支持 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="米兰客户端">
+<script>
+    window.addEventListener('load', function() {
+        console.log('ServiceWorker registration successful');
+        console.log('ServiceWorker registration failed');
+    });
+</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>创建订单 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding-bottom: 70px;
+        }
+        .product-card {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        .product-image {
+            height: 150px;
+            object-fit: cover;
+            width: 100%;
+        }
+        .product-card.out-of-stock {
+            opacity: 0.6;
+            filter: grayscale(1);
+        }
+        .cart-container {
+            position: sticky;
+            top: 20px;
+        }
+        .cart-card {
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .cart-item-image {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+        .cart-item-name {
+            flex-grow: 1;
+        }
+        .bottom-navbar {
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        .bottom-nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .bottom-nav-link i {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        .bottom-nav-link.active {
+            color: #dc3545;
+        }
+    </style>
+<link rel="stylesheet" href="/mlsp/static/css/mobile-app.css">
+<link rel="stylesheet" href="/mlsp/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/mlsp/client">
+                <i class="bi bi-shop"></i> 米兰食品公司
+            </a>
+            <div class="auth-buttons ms-auto">
+                <a href="/mlsp/client/dashboard" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-person-circle"></i> 我的账户
+                </a>
+                <a href="/mlsp/logout" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> 退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container my-4">
+        <h2 class="mb-4">创建订单</h2>
+        
+        <div class="row">
+            <!-- 产品列表 -->
+            <div class="col-lg-8">
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+                    {% for product in products %}
+                    <div class="col">
+                        <div class="card product-card h-100 {% if product.stock <= 0 %}out-of-stock{% endif %}">
+                            <img src="{% if product.image_url  and not product.image_url .startswith('/mlsp') and not product.image_url .startswith('http') %}/mlsp{{ product.image_url  }}{% else %}{{ product.image_url  }}{% endif %}" 
+                                class="card-img-top product-image" 
+                                alt="{{ product.name }}"
+                            >
+                            <div class="card-body">
+                                <h5 class="card-title">{{ product.name }}</h5>
+                                <p class="card-text small">{{ product.description }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-danger fw-bold">¥{{ product.price }}</span>
+                                    <span class="badge bg-light text-dark">库存: {{ product.stock }}</span>
+                                </div>
+                                <div class="d-grid gap-2 mt-3">
+                                    <button 
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="addToCart({{ product.id }})"
+                                        {% if product.stock <= 0 %}disabled{% endif %}
+                                    >
+                                        <i class="bi bi-cart-plus"></i> 加入购物车
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- 购物车 -->
+            <div class="col-lg-4 mt-4 mt-lg-0">
+                <div class="cart-container">
+                    <div class="card cart-card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0"><i class="bi bi-cart3"></i> 购物车</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="cart-items-container">
+                                <div class="text-center text-muted py-5" id="empty-cart-message">
+                                    <i class="bi bi-cart" style="font-size: 2rem;"></i>
+                                    <p class="mt-2">购物车还是空的</p>
+                                    <p class="small">从左侧选择产品添加到购物车</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3 fw-bold" id="total-container" style="display: none !important;">
+                                <span>总计:</span>
+                                <span class="text-danger" id="cart-total">¥0.00</span>
+                            </div>
+                            
+                            <form id="order-form" action="/mlsp/client/create-order" method="post" class="mt-3" style="display: none;">
+                                <input type="hidden" name="items" id="items-input">
+                                
+                                <div class="mb-3">
+                                    <label for="note" class="form-label">订单备注</label>
+                                    <textarea class="form-control" id="note" name="note" rows="2" placeholder="可选：添加特殊要求或备注信息"></textarea>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-check-circle"></i> 提交订单
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="clearCart()">
+                                        <i class="bi bi-trash"></i> 清空购物车
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 (移动端) -->
+    <nav class="navbar fixed-bottom navbar-light bg-white bottom-navbar py-2">
+        <div class="container-fluid justify-content-around">
+            <a href="/mlsp/client" class="bottom-nav-link">
+                <i class="bi bi-house-door"></i>
+                <span>首页</span>
+            </a>
+            <a href="/mlsp/client/products" class="bottom-nav-link">
+                <i class="bi bi-grid"></i>
+                <span>产品</span>
+            </a>
+            <a href="/mlsp/client/create-order" class="bottom-nav-link active">
+                <i class="bi bi-cart-plus"></i>
+                <span>下单</span>
+            </a>
+            <a href="/mlsp/client/orders" class="bottom-nav-link">
+                <i class="bi bi-list-check"></i>
+                <span>订单</span>
+            </a>
+            <a href="/mlsp/client/dashboard" class="bottom-nav-link">
+                <i class="bi bi-person"></i>
+                <span>我的</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        // 购物车数据
+        let cart = [];
+        let totalAmount = 0;
+        
+        // 添加商品到购物车
+        async function addToCart(productId) {
+            // 添加productId检查
+            if (!productId || productId === 'undefined') {
+                console.error('无效的产品ID');
+                alert('无法添加产品，请刷新页面重试');
+                return;
+            }
+
+            try {
+                // 获取产品信息
+                const response = await fetch(`/mlsp/client/api/product/${productId}`);
+                const product = await response.json();
+                
+                // 检查是否已在购物车中
+                const existingItem = cart.find(item => item.id === product.id);
+                
+                if (existingItem) {
+                    // 检查库存
+                    if (existingItem.quantity >= product.stock) {
+                        alert('已达到最大库存量');
+                        return;
+                    }
+                    
+                    // 增加数量
+                    existingItem.quantity += 1;
+                } else {
+                    // 添加新项目
+                    cart.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.image,
+                        quantity: 1,
+                        stock: product.stock
+                    });
+                }
+                
+                // 更新UI
+                updateCartUI();
+                
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                alert('添加到购物车时出错');
+            }
+        }
+        
+        // 更新购物车数量
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (!item) return;
+            
+            const newQuantity = item.quantity + change;
+            
+            // 验证新数量
+            if (newQuantity < 1) {
+                removeFromCart(productId);
+                return;
+            }
+            
+            if (newQuantity > item.stock) {
+                alert('超出可用库存');
+                return;
+            }
+            
+            item.quantity = newQuantity;
+            updateCartUI();
+        }
+        
+        // 从购物车中移除
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+        }
+        
+        // 清空购物车
+        function clearCart() {
+            cart = [];
+            updateCartUI();
+        }
+        
+        // 更新购物车UI
+        function updateCartUI() {
+            const container = document.getElementById('cart-items-container');
+            const emptyMessage = document.getElementById('empty-cart-message');
+            const totalContainer = document.getElementById('total-container');
+            const orderForm = document.getElementById('order-form');
+            const itemsInput = document.getElementById('items-input');
+            
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 如果购物车为空
+            if (cart.length === 0) {
+                container.appendChild(emptyMessage);
+                totalContainer.style.display = 'none';
+                orderForm.style.display = 'none';
+                return;
+            }
+            
+            // 添加购物车项目
+            totalAmount = 0;
+            let itemsData = [];
+            
+            cart.forEach(item => {
+                // 计算总价
+                const itemTotal = item.price * item.quantity;
+                totalAmount += itemTotal;
+                
+                // 准备表单数据
+                itemsData.push(`${item.id}:${item.quantity}`);
+                
+                // 创建购物车项目
+// 替换为这段代码
+const cartItem = document.createElement('div');
+cartItem.className = 'cart-item';
+cartItem.innerHTML = `
+    <img src="${item.image.startsWith('/mlsp') ? item.image : (item.image.startsWith('/') ? '/mlsp' + item.image : item.image)}" class="cart-item-image" alt="${item.name}">
+    <div class="cart-item-name">${item.name}</div>
+    <div class="d-flex align-items-center">
+        <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${item.id}, -1)">-</button>
+        <span class="mx-2">${item.quantity}</span>
+        <button class="btn btn-sm btn-outline-secondary" onclick="updateQuantity(${item.id}, 1)">+</button>
+        <button class="btn btn-sm text-danger ms-2" onclick="removeFromCart(${item.id})">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+`;
+                
+                container.appendChild(cartItem);
+            });
+            
+            // 显示总价
+            document.getElementById('cart-total').textContent = `¥${totalAmount.toFixed(2)}`;
+            totalContainer.style.display = 'flex';
+            
+            // 设置表单并显示
+            itemsInput.value = itemsData.join(',');
+            orderForm.style.display = 'block';
+            
+            // 隐藏空购物车消息
+            emptyMessage.style.display = 'none';
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/mlsp/static/js/pwa-install-minimal.js"></script>
+<script src="/mlsp/static/js/pwa-mode.js"></script>
+<script src="/mlsp/static/js/add-to-homescreen.js"></script>
+<script src="/mlsp/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/client-pwa-install.js"></script>
+</body>
+</html>

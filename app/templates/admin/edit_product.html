@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰管理端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/admin.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑产品 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            padding: 20px 0;
+            background: #343a40;
+            color: white;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #495057;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.75);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: #0d6efd;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 24px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .content-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .current-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 5px;
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        .expiry-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .expiry-preset {
+            background-color: #e9ecef;
+            border-radius: 15px;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border: 1px solid #ced4da;
+            transition: all 0.2s;
+        }
+        .expiry-preset:hover {
+            background-color: #dee2e6;
+        }
+        .expiry-preset.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        .barcode-scan-box {
+            border: 2px dashed #0d6efd;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f8f9fa;
+        }
+        .barcode-scan-box:hover {
+            background-color: #e7f1ff;
+        }
+        .barcode-scan-box i {
+            font-size: 1.5rem;
+            color: #0d6efd;
+        }
+        #scanner-container {
+            display: none;
+            margin-top: 15px;
+        }
+#scanner-video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    background-color: #000;
+}
+
+#scanner-container {
+    position: relative;
+    margin-top: 15px;
+    width: 100%;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.drawingBuffer {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-shop"></i> 米兰食品公司</h4>
+            <div class="text-muted">管理后台</div>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/dashboard">
+                    <i class="bi bi-speedometer2"></i> 仪表盘
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/orders">
+                    <i class="bi bi-list-check"></i> 订单管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/mlsp/admin/products">
+                    <i class="bi bi-box"></i> 产品管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/inventory">
+                    <i class="bi bi-clipboard-data"></i> 库存管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/shelves">
+                    <i class="bi bi-grid-3x3"></i> 货架管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/restaurants">
+                    <i class="bi bi-shop"></i> 餐馆管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/employees">
+                    <i class="bi bi-people"></i> 员工管理
+                </a>
+            </li>
+            <li class="nav-item mt-5">
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-left"></i> 退出登录
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>编辑产品</h2>
+            <a href="/mlsp/admin/products" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 返回产品列表
+            </a>
+        </div>
+
+        <div class="content-card">
+            <form action="/mlsp/admin/product/{{ product.id }}/edit" method="post" enctype="multipart/form-data">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">产品名称</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="price" class="form-label">价格 (¥)</label>
+                        <input type="number" class="form-control" id="price" name="price" step="0.01" min="0" value="{{ product.price }}" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">产品描述</label>
+                    <textarea class="form-control" id="description" name="description" rows="3" required>{{ product.description }}</textarea>
+                </div>
+
+                <!-- 条形码部分 -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="barcode" class="form-label">条形码</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="barcode" name="barcode" value="{{ product.barcode }}" placeholder="输入产品条形码">
+                            <div class="barcode-scan-box" id="scan-barcode-btn" style="display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-upc-scan me-1"></i> 扫描
+                            </div>
+                        </div>
+                        <div id="scanner-container" class="text-center">
+                            <video id="scanner-video" autoplay></video>
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-secondary" id="cancel-scan">取消</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="unit_type" class="form-label">单位类型</label>
+                        <select class="form-select" id="unit_type" name="unit_type">
+                            <option value="份" {% if product.unit_type == '份' %}selected{% endif %}>份</option>
+                            <option value="箱" {% if product.unit_type == '箱' %}selected{% endif %}>箱</option>
+                            <option value="瓶" {% if product.unit_type == '瓶' %}selected{% endif %}>瓶</option>
+                            <option value="袋" {% if product.unit_type == '袋' %}selected{% endif %}>袋</option>
+                            <option value="千克" {% if product.unit_type == '千克' %}selected{% endif %}>千克</option>
+                            <option value="个" {% if product.unit_type == '个' %}selected{% endif %}>个</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="stock" class="form-label">库存</label>
+                        <input type="number" class="form-control" id="stock" name="stock" min="0" value="{{ product.stock }}" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="stock_threshold" class="form-label">库存阈值</label>
+                        <input type="number" class="form-control" id="stock_threshold" name="stock_threshold" min="1" value="{{ product.stock_threshold if product.stock_threshold else 10 }}" required>
+                        <div class="form-text">低于此值将触发补货建议</div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="expiry_days" class="form-label">默认保质期 (天)</label>
+                    <input type="number" class="form-control" id="expiry_days" name="expiry_days" min="1" value="{{ product.expiry_days if product.expiry_days else 180 }}" required>
+                    
+                    <div class="expiry-presets mt-2">
+                        <span class="expiry-preset" data-days="30">30天</span>
+                        <span class="expiry-preset" data-days="90">90天</span>
+                        <span class="expiry-preset" data-days="180">半年</span>
+                        <span class="expiry-preset" data-days="365">1年</span>
+                        <span class="expiry-preset" data-days="730">2年</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="is_active" name="is_active" {% if product.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">产品上架</label>
+                    </div>
+                    <small class="text-muted">关闭此选项将使产品在客户端不可见</small>
+                </div>
+
+                <div class="mb-4">
+                    <label for="image" class="form-label">产品图片</label>
+                    
+                    {% if product.image_url %}
+                    <div class="mb-2">
+                        <p class="mb-1">当前图片:</p>
+                        <img src="{{ product.image_url }}" alt="{{ product.name }}" class="current-image">
+                    </div>
+                    {% endif %}
+                    
+                    <input type="file" class="form-control" id="image" name="image" accept="image/*" onchange="previewImage(this)">
+                    <small class="text-muted">只有上传新图片时才会替换当前图片</small>
+                    <div class="mt-2">
+                        <img id="preview" src="#" alt="预览" class="preview-image">
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> 保存修改
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
+    <script>
+        function previewImage(input) {
+            var preview = document.getElementById('preview');
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        // 保质期预设选择
+        document.addEventListener('DOMContentLoaded', function() {
+            // 全局变量用于防止重复处理
+let lastDetectedCode = "";
+let lastDetectedTime = 0;
+            const expiryInput = document.getElementById('expiry_days');
+            const presets = document.querySelectorAll('.expiry-preset');
+            
+            // 高亮当前选中的预设
+            function updatePresetSelection() {
+                const currentValue = parseInt(expiryInput.value);
+                presets.forEach(preset => {
+                    const days = parseInt(preset.getAttribute('data-days'));
+                    if (days === currentValue) {
+                        preset.classList.add('active');
+                    } else {
+                        preset.classList.remove('active');
+                    }
+                });
+            }
+            
+            // 初始化高亮
+            updatePresetSelection();
+            
+            // 点击预设设置保质期
+            presets.forEach(preset => {
+                preset.addEventListener('click', function() {
+                    const days = this.getAttribute('data-days');
+                    expiryInput.value = days;
+                    updatePresetSelection();
+                });
+            });
+            
+            // 手动修改时更新高亮
+            expiryInput.addEventListener('input', updatePresetSelection);
+            
+            // 条形码扫描功能
+            const scanButton = document.getElementById('scan-barcode-btn');
+            const scannerContainer = document.getElementById('scanner-container');
+            const scannerVideo = document.getElementById('scanner-video');
+            const cancelScanButton = document.getElementById('cancel-scan');
+            const barcodeInput = document.getElementById('barcode');
+            
+            let scanner = null;
+            
+            // 启动扫描
+            scanButton.addEventListener('click', function() {
+                scannerContainer.style.display = 'block';
+                startScanner();
+            });
+            
+            // 取消扫描
+            cancelScanButton.addEventListener('click', function() {
+                stopScanner();
+                scannerContainer.style.display = 'none';
+            });
+            
+            // 启动扫描器
+// 启动扫描器
+function startScanner() {
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: scannerVideo,
+            constraints: {
+                width: 480,
+                height: 320,
+                facingMode: "environment"
+            },
+        },
+        locate: true,
+        locator: {
+            patchSize: "medium",
+            halfSample: true
+        },
+        decoder: {
+            readers: [
+                "ean_reader",
+                "ean_8_reader",
+                "code_128_reader",
+                "code_39_reader",
+                "upc_reader",
+                "upc_e_reader",
+                "i2of5_reader"
+            ],
+            multiple: false
+        },
+        debug: {
+            drawBoundingBox: true,
+            drawScanline: true,
+            showPattern: true
+        }
+    }, function(err) {
+        if (err) {
+            console.error("启动扫描器出错:", err);
+            alert("无法启动扫描器，请检查摄像头权限或手动输入条形码");
+            scannerContainer.style.display = 'none';
+            return;
+        }
+        console.log("扫描器已初始化并启动");
+        scannerContainer.style.display = 'block';
+        Quagga.start();
+    });
+    
+    Quagga.onDetected(function(result) {
+        const code = result.codeResult.code;
+        console.log("检测到条码:", code, "类型:", result.codeResult.format);
+        
+        if (code && code.length > 5) {
+            // 频率控制 - 防止多次触发
+            if (lastDetectedCode === code) {
+                // 如果是同一个条码，检查时间间隔
+                const now = new Date().getTime();
+                if (now - lastDetectedTime < 2000) {
+                    return; // 2秒内不重复处理同一条码
+                }
+            }
+            
+            lastDetectedCode = code;
+            lastDetectedTime = new Date().getTime();
+            
+            // 播放提示音
+            let beep = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU" + Array(300).join("123"));
+            beep.play().catch(e => console.log("无法播放提示音"));
+            
+            // 更新输入框
+            barcodeInput.value = code;
+            
+            // 停止扫描
+            stopScanner();
+            scannerContainer.style.display = 'none';
+            
+            // 检查是否已存在该条码的产品
+            const currentProductId = {{ product.id }};
+            checkExistingBarcode(code, currentProductId);
+        }
+    });
+}
+
+// 停止扫描器
+function stopScanner() {
+    if (Quagga) {
+        try {
+            Quagga.stop();
+            console.log("扫描器已停止");
+        } catch (e) {
+            console.error("停止扫描器出错:", e);
+        }
+    }
+}
+
+            // 检查条形码是否已存在
+            function checkExistingBarcode(barcode, currentProductId) {
+                fetch(`/mlsp/admin/api/check-barcode?barcode=${barcode}&exclude_id=${currentProductId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            alert(`警告：此条形码已被产品 "${data.product_name}" 使用！`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("检查条形码出错:", error);
+                    });
+            }
+        });
+    </script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/admin-pwa-install.js"></script>
+</body>
+</html>

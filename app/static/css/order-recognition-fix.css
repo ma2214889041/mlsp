@@ -1,0 +1,42 @@
+body {
+    padding-bottom: 120px !important;
+}
+
+#confirm-step {
+    margin-bottom: 120px;
+}
+
+#submit-order {
+    margin-bottom: 60px;
+}
+
+.navbar.fixed-bottom {
+    z-index: 1000;
+}
+
+/* 确保按钮在小屏幕上也可见 */
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 160px !important;
+    }
+    
+    #confirm-step {
+        margin-bottom: 160px;
+    }
+    
+    #submit-order {
+        margin-bottom: 80px;
+    }
+}
+
+/* 修复空状态样式 */
+.empty-state {
+    padding: 40px;
+    text-align: center;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 15px;
+}

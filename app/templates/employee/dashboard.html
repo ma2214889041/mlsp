@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰仓库端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/employee.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>员工工作台 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-bottom: 70px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .order-card {
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .order-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .order-header {
+            padding: 12px 15px;
+            background-color: #f1f8ff;
+            border-bottom: 1px solid #e1e8f0;
+        }
+        .order-body {
+            padding: 15px;
+        }
+        .order-footer {
+            padding: 12px 15px;
+            background-color: #fbfdff;
+            border-top: 1px solid #e1e8f0;
+        }
+        .badge-large {
+            font-size: 0.9rem;
+            padding: 6px 10px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+        }
+        .empty-icon {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 20px;
+        }
+        .welcome-banner {
+            background-color: #e8f4fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 5px solid #0d6efd;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0 10px;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+        .action-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #0d6efd;
+        }
+        .tag-expiry {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/mlsp/employee/dashboard">
+                <i class="bi bi-box-seam"></i> 仓库工作台
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link">
+                    <i class="bi bi-person-circle"></i> {{ employee_name }}
+                </span>
+                <a class="nav-link" href="/mlsp/employee/scan">
+                    <i class="bi bi-qr-code-scan"></i> 扫码
+                </a>
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-right"></i> 退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container mt-4">
+        <div class="welcome-banner">
+            <h5><i class="bi bi-person-check"></i> 您好，{{ employee_name }}</h5>
+            <p class="mb-0">欢迎使用仓库工作台，请选择您要执行的操作。</p>
+        </div>
+        
+        <div class="action-buttons">
+            <a href="/mlsp/employee/scan" class="action-btn">
+                <div class="action-icon"><i class="bi bi-qr-code-scan"></i></div>
+                <h5>扫描订单</h5>
+                <p class="text-muted small mb-0">扫描二维码处理订单</p>
+            </a>
+            <a href="#pending-orders" class="action-btn">
+                <div class="action-icon"><i class="bi bi-list-check"></i></div>
+                <h5>待处理订单</h5>
+                <p class="text-muted small mb-0">查看需要处理的订单</p>
+            </a>
+            <a href="/mlsp/employee/inventory" class="action-btn">
+                <div class="action-icon"><i class="bi bi-box-arrow-in-down"></i></div>
+                <h5>入库管理</h5>
+                <p class="text-muted small mb-0">扫描条码添加库存</p>
+            </a>
+        </div>
+        
+        <!-- 显示过期商品警告 -->
+        {% if expiry_alerts and expiry_alerts|length > 0 %}
+        <div class="alert alert-warning">
+            <h5><i class="bi bi-exclamation-triangle"></i> 过期预警</h5>
+            <p>以下产品即将过期，请优先处理：</p>
+            <ul>
+                {% for alert in expiry_alerts %}
+                <li>
+                    <strong>{{ alert.product.name }}</strong> - 
+                    批次: {{ alert.batch_number }} 
+                    <span class="tag-expiry">{{ (alert.expiry_date - now.date()).days }}天后过期</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-4" id="pending-orders">
+            <h4><i class="bi bi-list-check"></i> 待处理订单</h4>
+            <div>
+                <span class="badge bg-primary badge-large">
+                    <i class="bi bi-clock-history"></i> {{ orders|length }} 个待处理
+                </span>
+            </div>
+        </div>
+
+        {% if orders %}
+            {% for order in orders %}
+            <div class="order-card">
+                <div class="order-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold">订单 #{{ order.id }}</span>
+                    </div>
+                    <span class="badge bg-info">已确认</span>
+                </div>
+                <div class="order-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-1">
+                                <i class="bi bi-shop"></i> 餐馆: {{ order.restaurant.name }}
+                            </p>
+                            <p class="mb-1">
+                                <i class="bi bi-calendar-check"></i> 确认时间: {{ order.confirmed_at.strftime('%m-%d %H:%M') }}
+                            </p>
+                        </div>
+                        <div class="col-6">
+                            {% if order.pickup_time %}
+                            <p class="mb-1">
+                                <i class="bi bi-clock"></i> 取货时间: 
+                                <span class="fw-bold text-primary">{{ order.pickup_time }}</span>
+                            </p>
+                            {% endif %}
+                            <p class="mb-1">
+                                <i class="bi bi-box"></i> 
+                                商品数: <span class="fw-bold">{{ order.items|length }}</span> 项
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="order-footer">
+                    <a href="/mlsp/employee/order/{{ order.id }}" class="btn btn-primary w-100">
+                        <i class="bi bi-arrow-right-circle"></i> 准备订单
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-clipboard-check"></i>
+                </div>
+                <h5>暂无待处理订单</h5>
+                <p class="text-muted">当有新订单确认后会显示在这里</p>
+                <a href="/mlsp/employee/scan" class="btn btn-primary mt-3">
+                    <i class="bi bi-qr-code-scan"></i> 扫描订单二维码
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/employee-pwa-install.js"></script>
+</body>
+</html>

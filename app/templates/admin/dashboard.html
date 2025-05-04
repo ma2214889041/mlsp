@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰管理端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/admin.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            padding: 20px 0;
+            background: #343a40;
+            color: white;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #495057;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.75);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: #0d6efd;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 24px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .stats-card {
+            padding: 20px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        .stats-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        .stats-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        .table {
+            white-space: nowrap;
+        }
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .quick-link-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            padding: 15px;
+            transition: transform 0.2s;
+            text-decoration: none;
+            color: #212529;
+        }
+        .quick-link-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .quick-link-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #0d6efd;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-shop"></i> 米兰食品公司</h4>
+            <div class="text-muted">管理后台</div>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link active" href="/mlsp/admin/dashboard">
+                    <i class="bi bi-speedometer2"></i> 仪表盘
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/orders">
+                    <i class="bi bi-list-check"></i> 订单管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/products">
+                    <i class="bi bi-box"></i> 产品管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/inventory">
+                    <i class="bi bi-clipboard-data"></i> 库存管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/shelves">
+                    <i class="bi bi-grid-3x3"></i> 货架管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/employees">
+                    <i class="bi bi-people"></i> 员工管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/restaurants">
+                    <i class="bi bi-shop"></i> 餐馆管理
+                </a>
+            </li>
+            <li class="nav-item mt-5">
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-left"></i> 退出登录
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <h2 class="mb-4">仪表盘</h2>
+
+        <!-- 快速链接区域 -->
+        <h5 class="mb-3">快速操作</h5>
+        <div class="quick-links">
+            <a href="/mlsp/admin/orders?status=pending" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-hourglass-split text-warning"></i></div>
+                <div>待处理订单</div>
+            </a>
+            <a href="/mlsp/admin/products" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-box text-success"></i></div>
+                <div>产品管理</div>
+            </a>
+            <a href="/mlsp/admin/inventory" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-clipboard-data text-info"></i></div>
+                <div>库存管理</div>
+            </a>
+            <a href="/mlsp/admin/shelves" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-grid-3x3 text-primary"></i></div>
+                <div>货架管理</div>
+            </a>
+            <a href="/mlsp/admin/employees" class="quick-link-card">
+                <div class="quick-link-icon"><i class="bi bi-people text-danger"></i></div>
+                <div>员工管理</div>
+            </a>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-hourglass-split"></i>
+                        </div>
+                        <div>
+                            <div class="stats-number text-primary">{{ pending_orders }}</div>
+                            <div>待处理订单</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-box"></i>
+                        </div>
+                        <div>
+                            <div class="stats-number text-success">{{ total_products }}</div>
+                            <div>产品总数</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <div class="d-flex align-items-center">
+                        <div class="stats-icon bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-shop"></i>
+                        </div>
+                        <div>
+                            <div class="stats-number text-info">{{ total_restaurants }}</div>
+                            <div>注册餐馆</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最新订单 -->
+        <div class="dashboard-card mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">最新订单</h5>
+                <a href="/mlsp/admin/orders" class="btn btn-sm btn-outline-primary">查看全部</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>订单ID</th>
+                            <th>餐馆</th>
+                            <th>金额</th>
+                            <th>状态</th>
+                            <th>时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in latest_orders %}
+                        <tr>
+                            <td>#{{ order.id }}</td>
+                            <td>{{ order.restaurant.name }}</td>
+                            <td>¥{{ order.total_amount }}</td>
+                            <td>
+                                {% if order.status == "pending" %}
+                                <span class="badge bg-warning">待确认</span>
+                                {% elif order.status == "confirmed" %}
+                                <span class="badge bg-info">已确认</span>
+                                {% elif order.status == "completed" %}
+                                <span class="badge bg-success">已完成</span>
+                                {% elif order.status == "cancelled" %}
+                                <span class="badge bg-danger">已取消</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <a href="/mlsp/admin/order/{{ order.id }}" class="btn btn-sm btn-outline-primary">查看</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 库存预警 -->
+        <div class="dashboard-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">库存预警</h5>
+                <a href="/mlsp/admin/inventory" class="btn btn-sm btn-outline-primary">管理库存</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>产品ID</th>
+                            <th>产品名称</th>
+                            <th>当前库存</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in low_stock_products %}
+                        <tr>
+                            <td>#{{ product.id }}</td>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.stock }}</td>
+                            <td>
+                                {% if product.stock <= 0 %}
+                                <span class="badge bg-danger">缺货</span>
+                                {% elif product.stock < 10 %}
+                                <span class="badge bg-warning">库存低</span>
+                                {% else %}
+                                <span class="badge bg-success">正常</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/mlsp/admin/product/{{ product.id }}/edit" class="btn btn-sm btn-outline-primary">编辑</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/admin-pwa-install.js"></script>
+</body>
+</html>

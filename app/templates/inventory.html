@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库存管理</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 16px;
+        }
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tabcontent {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .warning {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>库存管理系统</h1>
+    
+    <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'ViewInventory')">查看库存</button>
+        <button class="tablinks" onclick="openTab(event, 'AddInventory')">添加库存</button>
+        <button class="tablinks" onclick="openTab(event, 'AddProduct')">添加新产品</button>
+    </div>
+    
+    <div id="ViewInventory" class="tabcontent" style="display: block;">
+        <h2>当前库存状态</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>产品名称</th>
+                    <th>存放位置</th>
+                    <th>初始数量</th>
+                    <th>剩余数量</th>
+                    <th>入库日期</th>
+                    <th>过期日期</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in inventory_items %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.location }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.remaining }}</td>
+                    <td>{{ item.entry_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ item.expiry_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if item.expiry_date < now() %}
+                        <span class="warning">已过期</span>
+                        {% elif (item.expiry_date - now()).days < 30 %}
+                        <span class="warning">即将过期 ({{ (item.expiry_date - now()).days }}天)</span>
+                        {% else %}
+                        正常
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="AddInventory" class="tabcontent">
+        <h2>添加新库存</h2>
+        <form action="/mlsp/company/inventory/add" method="post">
+            <div class="form-group">
+                <label for="product_id">选择产品:</label>
+                <select id="product_id" name="product_id" required>
+                    <option value="">-- 请选择产品 --</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="location">存放位置:</label>
+                <input type="text" id="location" name="location" required placeholder="例如: A-1-3 (区域-货架-层级)">
+            </div>
+            
+            <div class="form-group">
+                <label for="quantity">数量:</label>
+                <input type="number" id="quantity" name="quantity" required min="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="expiry_date">过期日期:</label>
+                <input type="date" id="expiry_date" name="expiry_date" required>
+            </div>
+            
+            <button type="submit">添加库存</button>
+        </form>
+    </div>
+    
+    <div id="AddProduct" class="tabcontent">
+        <h2>添加新产品</h2>
+        <form action="/mlsp/company/product/add" method="post">
+            <div class="form-group">
+                <label for="name">产品名称:</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="description">产品描述:</label>
+                <input type="text" id="description" name="description">
+            </div>
+            
+            <button type="submit">添加产品</button>
+        </form>
+    </div>
+    
+    <a href="/mlsp/" class="back-link">返回首页</a>
+    
+    <script>
+    function openTab(evt, tabName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+    
+    function now() {
+        return new Date();
+    }
+    </script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/register-sw.js"></script>
+</body>
+</html>

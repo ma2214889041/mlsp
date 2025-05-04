@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>米兰食品公司系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        a {
+            display: inline-block;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>米兰食品公司订单与仓储系统</h1>
+    
+    <div class="card">
+        <h2>餐馆服务</h2>
+        <p>欢迎使用我们的在线订购系统。</p>
+        <a href="/mlsp/restaurant/order">我要下单</a>
+    </div>
+    
+    <div class="card">
+        <h2>公司管理</h2>
+        <p>管理订单与库存。</p>
+        <a href="/mlsp/company/orders">查看订单</a>
+        <a href="/mlsp/company/inventory">库存管理</a>
+        <a href="/mlsp/company/outbound">出库管理</a>
+    </div>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/register-sw.js"></script>
+</body>
+</html>

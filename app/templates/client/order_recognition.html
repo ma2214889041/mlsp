@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA support -->
+<meta name="theme-color" content="#dc3545">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰客户端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/client.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>AI订单识别 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            padding-bottom: 70px;
+            background-color: #f8f9fa;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #dc3545 !important;
+        }
+        .auth-buttons .btn {
+            margin-left: 10px;
+        }
+        .bottom-navbar {
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        .bottom-nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.8rem;
+        }
+        .bottom-nav-link i {
+            font-size: 1.3rem;
+            margin-bottom: 5px;
+        }
+        .bottom-nav-link.active {
+            color: #dc3545;
+        }
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .upload-area {
+            border: 2px dashed #dc3545;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(220, 53, 69, 0.05);
+        }
+        .upload-area:hover {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        .upload-icon {
+            font-size: 3rem;
+            color: #dc3545;
+            margin-bottom: 15px;
+        }
+        .chat-container {
+            height: 300px;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+        }
+        .user-message {
+            margin-left: auto;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px 20px 0 20px;
+        }
+        .ai-message {
+            margin-right: auto;
+            background-color: #e9ecef;
+            color: #212529;
+            padding: 10px 15px;
+            border-radius: 20px 20px 20px 0;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .item-card {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            padding: 15px;
+            background-color: white;
+            transition: all 0.2s;
+        }
+        .item-card:hover {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .counter-input {
+            width: 60px;
+            text-align: center;
+        }
+        .form-floating label {
+            color: #6c757d;
+        }
+        .voice-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        .voice-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        }
+        .voice-btn:active {
+            transform: scale(0.95);
+        }
+        .recording {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
+        .tabs-container {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .tab-btn {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background-color: transparent;
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background-color: #dc3545;
+            color: white;
+        }
+        .tab-content {
+            padding: 15px 0;
+        }
+        .search-bar {
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 0 0 10px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+        }
+        .search-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #f1f1f1;
+            cursor: pointer;
+        }
+        .search-item:hover {
+            background-color: #f8f9fa;
+        }
+        .total-section {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #dee2e6;
+        }
+        .steps-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 33%;
+        }
+        .step-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #6c757d;
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .step-icon.active {
+            background-color: #dc3545;
+            color: white;
+        }
+        .step-icon.completed {
+            background-color: #28a745;
+            color: white;
+        }
+        .step-line {
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            height: 2px;
+            background-color: #e9ecef;
+            width: 100%;
+            transform: translateY(-50%);
+        }
+        .step-line.active {
+            background-color: #dc3545;
+        }
+        .step-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .step-text.active {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 75%;
+            margin-bottom: 15px;
+            overflow: hidden;
+            border-radius: 10px;
+            background-color: #000;
+        }
+        #camera-feed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .capture-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .capture-btn::after {
+            content: '';
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background-color: white;
+        }
+        .camera-options {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .camera-option {
+            margin: 0 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .voice-feedback {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: center;
+            display: none;
+        }
+        .processing-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            flex-direction: column;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            margin-bottom: 15px;
+        }
+        #product-preview .item-card {
+            position: relative;
+        }
+        .remove-item {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #dc3545;
+            cursor: pointer;
+        }
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+        }
+        .empty-icon {
+            font-size: 3rem;
+            color: #dee2e6;
+            margin-bottom: 15px;
+        }
+    </style>
+<link rel="stylesheet" href="/mlsp/static/css/mobile-app.css">
+<link rel="stylesheet" href="/mlsp/static/css/pwa-styles.css">
+<link rel="stylesheet" href="/mlsp/static/css/order-recognition-fix.css">
+<link rel="stylesheet" href="/mlsp/static/css/order-recognition-fix.css">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/mlsp/client">
+                <i class="bi bi-shop"></i> 米兰食品公司
+            </a>
+            <div class="auth-buttons ms-auto">
+                <a href="/mlsp/client/dashboard" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-person-circle"></i> 我的账户
+                </a>
+                <a href="/mlsp/logout" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-box-arrow-right"></i> 退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container my-4">
+        <h2 class="mb-3">智能订单识别</h2>
+        
+        <!-- 步骤指示器 -->
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-icon active" id="step-icon-1">
+                    <i class="bi bi-camera"></i>
+                    <div class="step-line" id="step-line-1"></div>
+                </div>
+                <div class="step-text active" id="step-text-1">上传订单照片</div>
+            </div>
+            <div class="step">
+                <div class="step-icon" id="step-icon-2">
+                    <i class="bi bi-list-check"></i>
+                    <div class="step-line" id="step-line-2"></div>
+                </div>
+                <div class="step-text" id="step-text-2">调整订单内容</div>
+            </div>
+            <div class="step">
+                <div class="step-icon" id="step-icon-3">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="step-text" id="step-text-3">确认提交</div>
+            </div>
+        </div>
+        
+        <!-- 第一步：上传照片 -->
+        <div class="content-card" id="upload-step">
+            <div class="card-body">
+                <h4 class="mb-4">拍摄或上传订单照片</h4>
+                
+                <div class="tabs-container">
+                    <div class="d-flex justify-content-center mb-3">
+                        <button class="tab-btn active me-2" id="upload-tab">上传照片</button>
+                        <button class="tab-btn" id="camera-tab">拍摄照片</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <!-- 上传照片选项卡 -->
+                        <div id="upload-content" class="tab-pane active">
+                            <div class="upload-area" id="upload-trigger">
+                                <div class="upload-icon">
+                                    <i class="bi bi-cloud-arrow-up"></i>
+                                </div>
+                                <h5>点击上传或拖放文件</h5>
+                                <p class="text-muted">支持 JPG、PNG 格式</p>
+                                <input type="file" id="file-input" accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+                        
+                        <!-- 拍摄照片选项卡 -->
+                        <div id="camera-content" class="tab-pane" style="display: none;">
+                            <div class="camera-container">
+                                <video id="camera-feed" autoplay playsinline></video>
+                                <div class="camera-overlay">
+                                    <div class="capture-btn" id="capture-btn"></div>
+                                </div>
+                                <div class="camera-options">
+                                    <button class="camera-option" id="switch-camera">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    <button class="camera-option" id="flash-toggle">
+                                        <i class="bi bi-lightning"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 图片预览 -->
+                <div id="image-preview" style="display: none;">
+                    <h5>预览</h5>
+                    <div class="text-center">
+                        <img id="preview-image" class="preview-image">
+                    </div>
+                    <div class="d-flex justify-content-center mt-3">
+                        <button class="btn btn-outline-secondary me-2" id="cancel-preview">取消</button>
+                        <button class="btn btn-primary" id="process-image">开始识别</button>
+                    </div>
+                </div>
+                
+                <!-- 处理中显示 -->
+                <div class="processing-indicator" id="processing-indicator" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">处理中...</span>
+                    </div>
+                    <h5>正在识别订单内容</h5>
+                    <p class="text-muted">这可能需要几秒钟时间</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 第二步：调整订单内容 -->
+        <div class="content-card" id="adjust-step" style="display: none;">
+            <div class="card-body">
+                <h4 class="mb-4">调整订单内容</h4>
+                
+                <div class="tabs-container">
+                    <div class="d-flex justify-content-center mb-3">
+                        <button class="tab-btn active me-2" id="items-tab">订单项目</button>
+                        <button class="tab-btn" id="chat-tab">AI 助手</button>
+                        <button class="tab-btn ms-2" id="add-tab">添加商品</button>
+                    </div>
+                    
+                    <div class="tab-content">
+                        <!-- 订单项目选项卡 -->
+                        <div id="items-content" class="tab-pane active">
+                            <div id="product-preview">
+                                <!-- 产品项目会在这里动态添加 -->
+                                <div class="empty-state" id="empty-items-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-cart"></i>
+                                    </div>
+                                    <h5>暂无识别结果</h5>
+                                    <p class="text-muted">请先上传订单照片或使用AI助手添加商品</p>
+                                </div>
+                            </div>
+                            
+                            <div class="total-section" id="total-section" style="display: none;">
+                                总计: <span id="total-amount">¥0.00</span>
+                            </div>
+                        </div>
+                        
+                        <!-- AI 助手选项卡 -->
+                        <div id="chat-content" class="tab-pane" style="display: none;">
+                            <div class="chat-container" id="chat-messages">
+                                <div class="message ai-message">
+                                    您好！我是您的智能助手，您可以告诉我您需要调整的订单内容，例如"添加10瓶青岛啤酒"或"将意大利面数量改为5包"。
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex mt-3">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="chat-input" placeholder="输入您的消息...">
+                                    <button class="btn btn-primary" id="send-message">
+                                        <i class="bi bi-send"></i>
+                                    </button>
+                                </div>
+                                <button class="voice-btn ms-2" id="voice-btn">
+                                    <i class="bi bi-mic"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="voice-feedback" id="voice-feedback">
+                                <i class="bi bi-soundwave"></i> 正在聆听...
+                            </div>
+                        </div>
+                        
+                        <!-- 添加商品选项卡 -->
+                        <div id="add-content" class="tab-pane" style="display: none;">
+                            <div class="search-bar">
+                                <input type="text" class="form-control" id="product-search" placeholder="搜索商品...">
+                                <div class="search-results" id="search-results">
+                                    <!-- 搜索结果会在这里动态添加 -->
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">选择商品数量</label>
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-outline-secondary" id="decrease-quantity">-</button>
+                                    <input type="number" class="form-control mx-2 counter-input" id="add-quantity" value="1" min="1">
+                                    <button class="btn btn-outline-secondary" id="increase-quantity">+</button>
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-primary" id="add-product" disabled>
+                                <i class="bi bi-plus-circle"></i> 添加到订单
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <button class="btn btn-outline-secondary" id="back-to-upload">
+                        <i class="bi bi-arrow-left"></i> 返回
+                    </button>
+                    <button class="btn btn-primary" id="go-to-confirm">
+                        下一步 <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 第三步：确认提交 -->
+        <div class="content-card" id="confirm-step" style="display: none;">
+            <div class="card-body">
+                <h4 class="mb-4">确认订单</h4>
+                
+                <div class="mb-4">
+                    <h5>订单内容</h5>
+                    <div id="final-product-list">
+                        <!-- 最终产品列表会在这里动态添加 -->
+                    </div>
+                    
+                    <div class="total-section">
+                        总计: <span id="final-total-amount">¥0.00</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="form-floating">
+                        <textarea class="form-control" id="order-note" style="height: 100px" placeholder="订单备注"></textarea>
+                        <label for="order-note">订单备注（可选）</label>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-outline-secondary" id="back-to-adjust">
+                        <i class="bi bi-arrow-left"></i> 返回
+                    </button>
+                    <button class="btn btn-success" id="submit-order">
+                        <i class="bi bi-check-circle"></i> 提交订单
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 成功提示 -->
+        <div class="content-card" id="success-step" style="display: none;">
+            <div class="card-body text-center py-5">
+                <div class="text-success mb-3" style="font-size: 4rem;">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <h3>订单提交成功！</h3>
+                <p class="text-muted">您的订单已成功提交，我们将尽快处理</p>
+                <p>订单号: <span id="order-id" class="fw-bold"></span></p>
+                <div class="mt-4">
+                    <a href="/mlsp/client/orders" class="btn btn-primary me-2">查看我的订单</a>
+                    <a href="/mlsp/client/order-recognition" class="btn btn-outline-secondary">创建新订单</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航栏 (移动端) -->
+    <nav class="navbar fixed-bottom navbar-light bg-white bottom-navbar py-2">
+        <div class="container-fluid justify-content-around">
+            <a href="/mlsp/client" class="bottom-nav-link">
+                <i class="bi bi-house-door"></i>
+                <span>首页</span>
+            </a>
+            <a href="/mlsp/client/products" class="bottom-nav-link">
+                <i class="bi bi-grid"></i>
+                <span>产品</span>
+            </a>
+            <a href="/mlsp/client/create-order" class="bottom-nav-link active">
+                <i class="bi bi-cart-plus"></i>
+                <span>下单</span>
+            </a>
+            <a href="/mlsp/client/orders" class="bottom-nav-link">
+                <i class="bi bi-list-check"></i>
+                <span>订单</span>
+            </a>
+            <a href="/mlsp/client/dashboard" class="bottom-nav-link">
+                <i class="bi bi-person"></i>
+                <span>我的</span>
+            </a>
+        </div>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 全局变量
+        let sessionId = null;
+        let productList = [];
+        let totalAmount = 0;
+        let selectedProduct = null;
+        let mediaStream = null;
+        let recorder = null;
+        let isRecording = false;
+        let currentStep = 'upload';
+
+        // DOM 元素
+        const uploadStep = document.getElementById('upload-step');
+        const adjustStep = document.getElementById('adjust-step');
+        const confirmStep = document.getElementById('confirm-step');
+        const successStep = document.getElementById('success-step');
+        
+        const uploadTab = document.getElementById('upload-tab');
+        const cameraTab = document.getElementById('camera-tab');
+        const uploadContent = document.getElementById('upload-content');
+        const cameraContent = document.getElementById('camera-content');
+        
+        const uploadTrigger = document.getElementById('upload-trigger');
+        const fileInput = document.getElementById('file-input');
+        const imagePreview = document.getElementById('image-preview');
+        const previewImage = document.getElementById('preview-image');
+        const cancelPreview = document.getElementById('cancel-preview');
+        const processImage = document.getElementById('process-image');
+        const processingIndicator = document.getElementById('processing-indicator');
+        
+        const itemsTab = document.getElementById('items-tab');
+        const chatTab = document.getElementById('chat-tab');
+        const addTab = document.getElementById('add-tab');
+        const itemsContent = document.getElementById('items-content');
+        const chatContent = document.getElementById('chat-content');
+        const addContent = document.getElementById('add-content');
+        
+        const productPreview = document.getElementById('product-preview');
+        const emptyItemsState = document.getElementById('empty-items-state');
+        const totalSection = document.getElementById('total-section');
+        const totalAmount_el = document.getElementById('total-amount');
+        
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendMessage = document.getElementById('send-message');
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceFeedback = document.getElementById('voice-feedback');
+        
+        const productSearch = document.getElementById('product-search');
+        const searchResults = document.getElementById('search-results');
+        const decreaseQuantity = document.getElementById('decrease-quantity');
+        const increaseQuantity = document.getElementById('increase-quantity');
+        const addQuantity = document.getElementById('add-quantity');
+        const addProduct = document.getElementById('add-product');
+        
+        const backToUpload = document.getElementById('back-to-upload');
+        const goToConfirm = document.getElementById('go-to-confirm');
+        const backToAdjust = document.getElementById('back-to-adjust');
+        const submitOrder = document.getElementById('submit-order');
+        
+        const finalProductList = document.getElementById('final-product-list');
+        const finalTotalAmount = document.getElementById('final-total-amount');
+        const orderNote = document.getElementById('order-note');
+        const orderId = document.getElementById('order-id');
+        
+        const cameraFeed = document.getElementById('camera-feed');
+        const captureBtn = document.getElementById('capture-btn');
+        const switchCamera = document.getElementById('switch-camera');
+        const flashToggle = document.getElementById('flash-toggle');
+        
+        // 步骤指示器元素
+        const stepIcons = [
+            document.getElementById('step-icon-1'),
+            document.getElementById('step-icon-2'),
+            document.getElementById('step-icon-3')
+        ];
+        const stepLines = [
+            document.getElementById('step-line-1'),
+            document.getElementById('step-line-2')
+        ];
+        const stepTexts = [
+            document.getElementById('step-text-1'),
+            document.getElementById('step-text-2'),
+            document.getElementById('step-text-3')
+        ];
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initTabs();
+            initUploadArea();
+            initCameraCapture();
+            initChatInput();
+            initProductSearch();
+            initQuantityControls();
+            initNavigationButtons();
+        });
+
+        // 初始化标签页切换
+        function initTabs() {
+            // 照片上传/拍摄照片标签页
+            uploadTab.addEventListener('click', function() {
+                uploadTab.classList.add('active');
+                cameraTab.classList.remove('active');
+                uploadContent.style.display = 'block';
+                cameraContent.style.display = 'none';
+                stopCamera();
+            });
+            
+            cameraTab.addEventListener('click', function() {
+                cameraTab.classList.add('active');
+                uploadTab.classList.remove('active');
+                uploadContent.style.display = 'none';
+                cameraContent.style.display = 'block';
+                startCamera();
+            });
+            
+            // 调整订单内容标签页
+            itemsTab.addEventListener('click', function() {
+                itemsTab.classList.add('active');
+                chatTab.classList.remove('active');
+                addTab.classList.remove('active');
+                itemsContent.style.display = 'block';
+                chatContent.style.display = 'none';
+                addContent.style.display = 'none';
+            });
+            
+            chatTab.addEventListener('click', function() {
+                chatTab.classList.add('active');
+                itemsTab.classList.remove('active');
+                addTab.classList.remove('active');
+                chatContent.style.display = 'block';
+                itemsContent.style.display = 'none';
+                addContent.style.display = 'none';
+            });
+            
+            addTab.addEventListener('click', function() {
+                addTab.classList.add('active');
+                itemsTab.classList.remove('active');
+                chatTab.classList.remove('active');
+                addContent.style.display = 'block';
+                itemsContent.style.display = 'none';
+                chatContent.style.display = 'none';
+            });
+        }
+
+        // 初始化上传区域
+        function initUploadArea() {
+            uploadTrigger.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    displayImagePreview(file);
+                }
+            });
+            
+            uploadTrigger.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadTrigger.classList.add('border-primary');
+            });
+            
+            uploadTrigger.addEventListener('dragleave', function() {
+                uploadTrigger.classList.remove('border-primary');
+            });
+            
+            uploadTrigger.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadTrigger.classList.remove('border-primary');
+                
+                if (e.dataTransfer.files.length > 0) {
+                    const file = e.dataTransfer.files[0];
+                    displayImagePreview(file);
+                }
+            });
+            
+            cancelPreview.addEventListener('click', function() {
+                resetImageUpload();
+            });
+            
+            processImage.addEventListener('click', function() {
+                processingIndicator.style.display = 'flex';
+                imagePreview.style.display = 'none';
+                
+                // 获取预览图像的文件
+                const file = fileInput.files[0];
+                if (file) {
+                    uploadOrderPhoto(file);
+                }
+            });
+        }
+        
+        // 显示图片预览
+        function displayImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                uploadTrigger.style.display = 'none';
+                imagePreview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 重置图片上传
+        function resetImageUpload() {
+            fileInput.value = '';
+            uploadTrigger.style.display = 'block';
+            imagePreview.style.display = 'none';
+        }
+        
+        // 初始化相机捕获
+        function initCameraCapture() {
+            captureBtn.addEventListener('click', function() {
+                if (mediaStream) {
+                    // 创建canvas来截取当前视频帧
+                    const canvas = document.createElement('canvas');
+                    canvas.width = cameraFeed.videoWidth;
+                    canvas.height = cameraFeed.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(cameraFeed, 0, 0, canvas.width, canvas.height);
+                    
+                    // 转换为Blob
+                    canvas.toBlob(function(blob) {
+                        // 创建文件对象
+                        const file = new File([blob], "camera-capture.jpg", { type: "image/jpeg" });
+                        fileInput.files = new DataTransfer().files;
+                        
+                        // 显示预览
+                        displayImagePreview(file);
+                        
+                        // 停止相机
+                        stopCamera();
+                        
+                        // 切换回上传选项卡
+                        uploadTab.classList.add('active');
+                        cameraTab.classList.remove('active');
+                        uploadContent.style.display = 'block';
+                        cameraContent.style.display = 'none';
+                    }, 'image/jpeg', 0.95);
+                }
+            });
+            
+            switchCamera.addEventListener('click', function() {
+                stopCamera();
+                startCamera(true);
+            });
+        }
+        
+        // 启动相机
+        async function startCamera(switchFacing = false) {
+            try {
+                // 如果已经有媒体流，则先停止
+                if (mediaStream) {
+                    stopCamera();
+                }
+                
+                // 获取当前使用的摄像头类型
+                const currentFacingMode = localStorage.getItem('facingMode') || 'environment';
+                
+                // 如果需要切换，则改变摄像头类型
+                const facingMode = switchFacing 
+                    ? (currentFacingMode === 'environment' ? 'user' : 'environment') 
+                    : currentFacingMode;
+                
+                // 保存摄像头类型选择
+                localStorage.setItem('facingMode', facingMode);
+                
+                // 请求摄像头访问
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode }
+                });
+                
+                // 设置视频源
+                cameraFeed.srcObject = mediaStream;
+            } catch (error) {
+                console.error('相机访问错误:', error);
+                alert('无法访问摄像头，请检查权限设置或使用照片上传功能。');
+            }
+        }
+        
+        // 停止相机
+        function stopCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+                cameraFeed.srcObject = null;
+            }
+        }
+        
+        // 初始化聊天输入
+        function initChatInput() {
+            sendMessage.addEventListener('click', function() {
+                const message = chatInput.value.trim();
+                if (message) {
+                    sendChatMessage(message);
+                    chatInput.value = '';
+                }
+            });
+            
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const message = chatInput.value.trim();
+                    if (message) {
+                        sendChatMessage(message);
+                        chatInput.value = '';
+                    }
+                    e.preventDefault();
+                }
+            });
+            
+            voiceBtn.addEventListener('click', function() {
+                if (!isRecording) {
+                    startVoiceRecording();
+                } else {
+                    stopVoiceRecording();
+                }
+            });
+        }
+        
+        // 发送聊天消息
+        async function sendChatMessage(message) {
+            // 添加用户消息到聊天窗口
+            addMessageToChat(message, 'user');
+            
+            if (!sessionId) {
+                addMessageToChat('请先上传订单照片', 'ai');
+                return;
+            }
+            
+            try {
+                // 发送消息到后端API
+                const response = await fetch('/mlsp/api/order-recognition/adjust-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'session_id': sessionId,
+                        'message': message
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 添加AI回复到聊天窗口
+                    addMessageToChat(data.response, 'ai');
+                    
+                    // 更新产品列表
+                    if (data.products && data.products.length > 0) {
+                        productList = data.products;
+                        updateProductDisplay();
+                    }
+                    
+                    // 如果有语音响应，播放它
+                    if (data.audio_response_id) {
+                        playAudioResponse(data.audio_response_id);
+                    }
+                } else {
+                    addMessageToChat('抱歉，处理您的消息时出现了问题。', 'ai');
+                }
+            } catch (error) {
+                console.error('发送消息错误:', error);
+                addMessageToChat('抱歉，网络连接出现了问题。', 'ai');
+            }
+        }
+        
+        // 添加消息到聊天窗口
+        function addMessageToChat(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.textContent = message;
+            
+            chatMessages.appendChild(messageDiv);
+            
+            // 自动滚动到最新消息
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // 语音录制
+        async function startVoiceRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                recorder = new MediaRecorder(stream);
+                
+                const audioChunks = [];
+                recorder.addEventListener('dataavailable', e => {
+                    audioChunks.push(e.data);
+                });
+                
+                recorder.addEventListener('stop', async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    await sendVoiceMessage(audioBlob);
+                    
+                    // 关闭音频流
+                    stream.getTracks().forEach(track => track.stop());
+                });
+                
+                recorder.start();
+                isRecording = true;
+                
+                // 更新UI
+                voiceBtn.innerHTML = '<i class="bi bi-stop-fill"></i>';
+                voiceBtn.classList.add('recording');
+                voiceFeedback.style.display = 'block';
+            } catch (error) {
+                console.error('麦克风访问错误:', error);
+                alert('无法访问麦克风，请检查权限设置或使用文本输入。');
+            }
+        }
+        
+        function stopVoiceRecording() {
+            if (recorder && isRecording) {
+                recorder.stop();
+                isRecording = false;
+                
+                // 更新UI
+                voiceBtn.innerHTML = '<i class="bi bi-mic"></i>';
+                voiceBtn.classList.remove('recording');
+                voiceFeedback.style.display = 'none';
+            }
+        }
+        
+        // 发送语音消息
+        async function sendVoiceMessage(audioBlob) {
+            if (!sessionId) {
+                addMessageToChat('请先上传订单照片', 'ai');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('session_id', sessionId);
+                formData.append('audio', audioBlob);
+                
+                const response = await fetch('/mlsp/api/order-recognition/voice-adjust-order', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 添加识别的文字到用户消息
+                    if (data.transcript) {
+                        addMessageToChat(data.transcript, 'user');
+                    }
+                    
+                    // 添加AI回复到聊天窗口
+                    if (data.response) {
+                        addMessageToChat(data.response, 'ai');
+                    }
+                    
+                    // 更新产品列表
+                    if (data.products && data.products.length > 0) {
+                        productList = data.products;
+                        updateProductDisplay();
+                    }
+                    
+                    // 如果有语音响应，播放它
+                    if (data.audio_response_id) {
+                        playAudioResponse(data.audio_response_id);
+                    }
+                } else {
+                    addMessageToChat('抱歉，处理您的语音时出现了问题。', 'ai');
+                }
+            } catch (error) {
+                console.error('发送语音错误:', error);
+                addMessageToChat('抱歉，网络连接出现了问题。', 'ai');
+            }
+        }
+        
+        // 播放语音响应
+        async function playAudioResponse(responseId) {
+            try {
+                const audio = new Audio(`/mlsp/api/order-recognition/response-audio/${responseId}`);
+                await audio.play();
+            } catch (error) {
+                console.error('播放语音响应错误:', error);
+            }
+        }
+        
+        // 初始化产品搜索
+        function initProductSearch() {
+            productSearch.addEventListener('input', debounce(function() {
+                const query = productSearch.value.trim();
+                if (query.length >= 2) {
+                    searchProducts(query);
+                } else {
+                    searchResults.style.display = 'none';
+                }
+            }, 300));
+            
+            // 点击外部关闭搜索结果
+            document.addEventListener('click', function(e) {
+                if (!productSearch.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+        
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+        
+        // 搜索产品
+        async function searchProducts(query) {
+            try {
+                const response = await fetch(`/mlsp/api/order-recognition/products/search?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.success && data.products) {
+                    displaySearchResults(data.products);
+                } else {
+                    searchResults.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('搜索产品错误:', error);
+                searchResults.style.display = 'none';
+            }
+        }
+        
+        // 显示搜索结果
+        function displaySearchResults(products) {
+            searchResults.innerHTML = '';
+            
+            if (products.length === 0) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'search-item';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between">
+                        <div>${product.name}</div>
+                        <div class="text-danger">¥${product.price.toFixed(2)}</div>
+                    </div>
+                `;
+                
+                item.addEventListener('click', function() {
+                    selectedProduct = product;
+                    productSearch.value = product.name;
+                    searchResults.style.display = 'none';
+                    addProduct.disabled = false;
+                });
+                
+                searchResults.appendChild(item);
+            });
+            
+            searchResults.style.display = 'block';
+        }
+        
+        // 初始化数量控制
+        function initQuantityControls() {
+            decreaseQuantity.addEventListener('click', function() {
+                let value = parseInt(addQuantity.value);
+                if (value > 1) {
+                    addQuantity.value = value - 1;
+                }
+            });
+            
+            increaseQuantity.addEventListener('click', function() {
+                let value = parseInt(addQuantity.value);
+                addQuantity.value = value + 1;
+            });
+            
+            addQuantity.addEventListener('change', function() {
+                let value = parseInt(addQuantity.value);
+                if (value < 1) {
+                    addQuantity.value = 1;
+                }
+            });
+            
+            addProduct.addEventListener('click', function() {
+                if (selectedProduct) {
+                    addProductToOrder(selectedProduct, parseInt(addQuantity.value));
+                    
+                    // 重置表单
+                    selectedProduct = null;
+                    productSearch.value = '';
+                    addQuantity.value = 1;
+                    addProduct.disabled = true;
+                }
+            });
+        }
+        
+        // 添加产品到订单
+        function addProductToOrder(product, quantity) {
+            if (!sessionId) {
+                alert('请先上传订单照片');
+                return;
+            }
+            
+            // 检查是否已存在该产品
+            const existingProductIndex = productList.findIndex(p => p.id === product.id);
+            
+            if (existingProductIndex !== -1) {
+                // 更新数量
+                productList[existingProductIndex].quantity += quantity;
+            } else {
+                // 添加新产品
+                productList.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity: quantity,
+                    unit_type: product.unit_type || '份'
+                });
+            }
+            
+            // 更新产品显示
+            updateProductDisplay();
+            
+            // 更新到后端
+            updateItemQuantity(product.id, existingProductIndex !== -1 ? productList[existingProductIndex].quantity : quantity);
+        }
+        
+        // 更新商品数量到后端
+        async function updateItemQuantity(productId, quantity) {
+            try {
+                const response = await fetch('/mlsp/api/order-recognition/update-item-quantity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'session_id': sessionId,
+                        'product_id': productId,
+                        'quantity': quantity
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    console.error('更新商品数量失败:', data.message);
+                }
+            } catch (error) {
+                console.error('更新商品数量错误:', error);
+            }
+        }
+        
+        // 更新产品显示
+        function updateProductDisplay() {
+            // 清空产品列表
+            productPreview.innerHTML = '';
+            
+            if (productList.length === 0) {
+                emptyItemsState.style.display = 'block';
+                totalSection.style.display = 'none';
+                return;
+            }
+            
+            emptyItemsState.style.display = 'none';
+            
+            // 计算总金额
+            totalAmount = 0;
+            
+            // 添加产品项目
+            productList.forEach((product, index) => {
+                const itemAmount = product.price * product.quantity;
+                totalAmount += itemAmount;
+                
+                const item = document.createElement('div');
+                item.className = 'item-card';
+                item.innerHTML = `
+                    <i class="bi bi-x remove-item" data-index="${index}"></i>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">${product.name}</div>
+                            <div class="text-muted">¥${product.price.toFixed(2)} × ${product.quantity} ${product.unit_type || '份'}</div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-sm btn-outline-secondary decrease-btn" data-index="${index}">-</button>
+                            <span class="mx-2">${product.quantity}</span>
+                            <button class="btn btn-sm btn-outline-secondary increase-btn" data-index="${index}">+</button>
+                            <div class="ms-3 text-danger fw-bold">¥${itemAmount.toFixed(2)}</div>
+                        </div>
+                    </div>
+                `;
+                
+                productPreview.appendChild(item);
+            });
+            
+            // 绑定数量调整事件
+            document.querySelectorAll('.decrease-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    if (productList[index].quantity > 1) {
+                        productList[index].quantity -= 1;
+                        updateItemQuantity(productList[index].id, productList[index].quantity);
+                        updateProductDisplay();
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.increase-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    productList[index].quantity += 1;
+                    updateItemQuantity(productList[index].id, productList[index].quantity);
+                    updateProductDisplay();
+                });
+            });
+            
+            // 绑定删除商品事件
+            document.querySelectorAll('.remove-item').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const productId = productList[index].id;
+                    productList.splice(index, 1);
+                    updateItemQuantity(productId, 0); // 设置数量为0表示删除
+                    updateProductDisplay();
+                });
+            });
+            
+            // 更新总金额
+            totalAmount_el.textContent = `¥${totalAmount.toFixed(2)}`;
+            finalTotalAmount.textContent = `¥${totalAmount.toFixed(2)}`;
+            totalSection.style.display = 'block';
+        }
+        
+        // 初始化导航按钮
+        function initNavigationButtons() {
+            backToUpload.addEventListener('click', function() {
+                goToStep('upload');
+            });
+            
+            goToConfirm.addEventListener('click', function() {
+                // 检查是否有订单项目
+                if (productList.length === 0) {
+                    alert('请至少添加一件商品');
+                    return;
+                }
+                
+                // 更新订单确认页面的产品列表
+                updateFinalProductList();
+                
+                // 切换到确认步骤
+                goToStep('confirm');
+            });
+            
+            backToAdjust.addEventListener('click', function() {
+                goToStep('adjust');
+            });
+            
+            submitOrder.addEventListener('click', function() {
+                confirmOrder();
+            });
+        }
+        
+        // 更新最终产品列表
+        function updateFinalProductList() {
+            finalProductList.innerHTML = '';
+            
+            productList.forEach(product => {
+                const itemAmount = product.price * product.quantity;
+                
+                const item = document.createElement('div');
+                item.className = 'item-card';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">${product.name}</div>
+                            <div class="text-muted">¥${product.price.toFixed(2)} × ${product.quantity} ${product.unit_type || '份'}</div>
+                        </div>
+                        <div class="text-danger fw-bold">¥${itemAmount.toFixed(2)}</div>
+                    </div>
+                `;
+                
+                finalProductList.appendChild(item);
+            });
+        }
+        
+        // 上传订单照片
+        async function uploadOrderPhoto(file) {
+            try {
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                const response = await fetch('/mlsp/api/order-recognition/upload-photo', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    sessionId = data.session_id;
+                    
+                    // 使用测试数据模拟识别结果
+                    if (data.mode === 'test') {
+                        const testResponse = await fetch('/mlsp/api/order-recognition/test-image-recognition', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                            },
+                            body: new URLSearchParams({
+                                'product_names': 'test'
+                            })
+                        });
+                        
+                        const testData = await testResponse.json();
+                        if (testData.success) {
+                            productList = testData.products;
+                        }
+                    } else if (data.products && data.products.length > 0) {
+                        productList = data.products;
+                    }
+                    
+                    // 添加欢迎消息到聊天
+                    addMessageToChat('订单照片上传成功！我已经识别出以下商品，您可以通过对话进行调整，例如"将意大利面数量改为5包"。', 'ai');
+                    
+                    // 更新产品展示
+                    updateProductDisplay();
+                    
+                    // 切换到调整步骤
+                    goToStep('adjust');
+                } else {
+                    alert(`上传失败: ${data.message || '识别订单时出现问题'}`);
+                    resetImageUpload();
+                    processingIndicator.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('上传照片错误:', error);
+                alert('上传失败，请重试');
+                resetImageUpload();
+                processingIndicator.style.display = 'none';
+            }
+        }
+        
+        // 确认订单
+        async function confirmOrder() {
+            try {
+                if (!sessionId) {
+                    alert('会话已过期，请重新开始');
+                    goToStep('upload');
+                    return;
+                }
+                
+                submitOrder.disabled = true;
+                submitOrder.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 提交中...';
+                
+                const response = await fetch('/mlsp/api/order-recognition/confirm-order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        'session_id': sessionId,
+                        'note': orderNote.value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 显示订单ID
+                    orderId.textContent = data.order_id;
+                    
+                    // 切换到成功步骤
+                    goToStep('success');
+                } else {
+                    alert(`订单提交失败: ${data.message || '提交订单时出现问题'}`);
+                    submitOrder.disabled = false;
+                    submitOrder.innerHTML = '<i class="bi bi-check-circle"></i> 提交订单';
+                }
+            } catch (error) {
+                console.error('提交订单错误:', error);
+                alert('提交订单失败，请重试');
+                submitOrder.disabled = false;
+                submitOrder.innerHTML = '<i class="bi bi-check-circle"></i> 提交订单';
+            }
+        }
+        
+        // 切换步骤
+        function goToStep(step) {
+            currentStep = step;
+            
+            // 隐藏所有步骤
+            uploadStep.style.display = 'none';
+            adjustStep.style.display = 'none';
+            confirmStep.style.display = 'none';
+            successStep.style.display = 'none';
+            
+            // 显示当前步骤
+            switch (step) {
+                case 'upload':
+                    uploadStep.style.display = 'block';
+                    updateStepIndicators(0);
+                    break;
+                case 'adjust':
+                    adjustStep.style.display = 'block';
+                    updateStepIndicators(1);
+                    break;
+                case 'confirm':
+                    confirmStep.style.display = 'block';
+                    updateStepIndicators(2);
+                    break;
+                case 'success':
+                    successStep.style.display = 'block';
+                    updateStepIndicators(3);
+                    break;
+            }
+        }
+        
+        // 更新步骤指示器
+        function updateStepIndicators(activeStep) {
+            // 重置所有步骤
+            stepIcons.forEach((icon, i) => {
+                icon.classList.remove('active', 'completed');
+                stepTexts[i].classList.remove('active');
+            });
+            
+            stepLines.forEach(line => {
+                line.classList.remove('active');
+            });
+            
+            // 设置当前活动步骤之前的步骤为已完成
+            for (let i = 0; i < activeStep; i++) {
+                stepIcons[i].classList.add('completed');
+                if (i < stepLines.length) {
+                    stepLines[i].classList.add('active');
+                }
+            }
+            
+            // 设置当前活动步骤
+            if (activeStep < 3) {
+                stepIcons[activeStep].classList.add('active');
+                stepTexts[activeStep].classList.add('active');
+            }
+        }
+    </script>
+<script src="/mlsp/static/js/order-recognition-fix.js"></script>
+<script src="/mlsp/static/js/pwa-install-minimal.js"></script>
+<script src="/mlsp/static/js/pwa-mode.js"></script>
+<script src="/mlsp/static/js/add-to-homescreen.js"></script>
+<script src="/mlsp/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/client-pwa-install.js"></script>
+<script src="/mlsp/static/js/order-recognition-fix.js"></script>
+</body>
+</html>

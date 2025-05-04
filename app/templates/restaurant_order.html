@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐馆下单页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .order-form {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        label {
+            display: block;
+            margin: 15px 0 5px 0;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 150px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>餐馆下单系统</h1>
+    
+    <div class="order-form">
+        <form action="/mlsp/restaurant/order" method="post">
+            <label for="restaurant_name">餐馆名称:</label>
+            <input type="text" id="restaurant_name" name="restaurant_name" required>
+            
+            <label for="contact_phone">联系电话:</label>
+            <input type="text" id="contact_phone" name="contact_phone" required>
+            
+            <label for="items">订购商品列表 (每行一项，格式: 商品名 数量):</label>
+            <textarea id="items" name="items" required placeholder="青岛啤酒 10箱&#10;意大利面 5袋&#10;橄榄油 3瓶"></textarea>
+            
+            <button type="submit">提交订单</button>
+        </form>
+    </div>
+    
+    <a href="/mlsp/" class="back-link">返回首页</a>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/register-sw.js"></script>
+</body>
+</html>

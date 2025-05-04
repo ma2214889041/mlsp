@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰仓库端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/employee.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库存管理 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-bottom: 70px;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+        .content-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .expiry-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .expiry-preset {
+            background-color: #e9ecef;
+            border-radius: 15px;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border: 1px solid #ced4da;
+            transition: all 0.2s;
+        }
+        .expiry-preset:hover {
+            background-color: #dee2e6;
+        }
+        .expiry-preset.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        .scan-box {
+            border: 2px dashed #0d6efd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #f8f9fa;
+        }
+        .scan-box:hover {
+            background-color: #e7f1ff;
+        }
+        .scan-box i {
+            font-size: 3rem;
+            color: #0d6efd;
+            margin-bottom: 10px;
+        }
+        .scan-box p {
+            margin-bottom: 0;
+        }
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .inventory-form {
+            background-color: #f1f8ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #0d6efd;
+        }
+        #scanner-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            display: none;
+        }
+        #scanner-video {
+            width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        .scanner-buttons {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        #product-info {
+            display: none;
+            margin-top: 20px;
+        }
+        #recent-activity {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .activity-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #e7f1ff;
+            color: #0d6efd;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/mlsp/employee/dashboard">
+                <i class="bi bi-box-seam"></i> 仓库工作台
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link">
+                    <i class="bi bi-person-circle"></i> {{ employee_name }}
+                </span>
+                <a class="nav-link" href="/mlsp/employee/dashboard">
+                    <i class="bi bi-house-door"></i> 首页
+                </a>
+                <a class="nav-link" href="/mlsp/employee/scan">
+                    <i class="bi bi-qr-code-scan"></i> 扫码
+                </a>
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-right"></i> 退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容 -->
+    <div class="container my-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-box-seam"></i> 入库管理</h2>
+        </div>
+
+        <!-- 条形码扫描区域 -->
+        <div class="content-card">
+            <h5 class="mb-3">扫描产品条形码</h5>
+            <div class="scan-box" id="scan-trigger">
+                <i class="bi bi-upc-scan"></i>
+                <p>点击此处扫描产品条形码</p>
+                <small class="text-muted">或手动输入产品ID/条形码</small>
+            </div>
+            
+            <div id="scanner-container">
+                <video id="scanner-video" autoplay></video>
+                <div class="scanner-buttons">
+                    <button class="btn btn-secondary" id="cancel-scan">取消</button>
+                    <button class="btn btn-primary" id="capture-scan">手动输入</button>
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="search-input" placeholder="输入产品ID或条形码">
+                    <button class="btn btn-primary" id="search-product">查找</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 产品信息区域 -->
+        <div class="content-card" id="product-info">
+            <div class="d-flex align-items-center mb-3">
+                <img src="" id="product-image" class="product-image me-3">
+                <div>
+                    <h5 id="product-name">产品名称</h5>
+                    <p id="product-description" class="mb-0 text-muted">产品描述</p>
+                </div>
+            </div>
+            
+            <form id="inventory-form" class="inventory-form" action="/mlsp/employee/inventory/add" method="post">
+                <input type="hidden" id="product_id" name="product_id">
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="add_stock" class="form-label">入库数量</label>
+                        <div class="input-group">
+<input type="number" class="form-control" name="add_stock" id="add_stock" placeholder="入库数量" min="1" required>
+                            <span class="input-group-text" id="unit-addon">份</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="shelf_id" class="form-label">货架</label>
+                        <select class="form-select" id="shelf_id" name="shelf_id">
+                            <option value="">-- 选择货架 --</option>
+                            {% for shelf in shelves %}
+                            <option value="{{ shelf.id }}">{{ shelf.name }} ({{ shelf.location }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="slot_id" class="form-label">货位</label>
+                        <select class="form-select" name="slot_id" id="slot_id">
+                            <option value="">选择货位(可选)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="expiry_date" class="form-label">过期日期</label>
+                        <input type="text" class="form-control datepicker" name="expiry_date" id="expiry_date" placeholder="选择日期" required>
+                        
+                        <div class="expiry-presets mt-2">
+                            <span class="expiry-preset" data-days="30">30天</span>
+                            <span class="expiry-preset" data-days="90">90天</span>
+                            <span class="expiry-preset" data-days="180">半年</span>
+                            <span class="expiry-preset" data-days="365">1年</span>
+                            <span class="expiry-preset" data-days="730">2年</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 添加库存
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 最近入库活动 -->
+        <div class="content-card">
+            <h5 class="mb-3">最近入库活动</h5>
+            <div id="recent-activity">
+                {% if recent_activities %}
+                    {% for activity in recent_activities %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-box-arrow-in-down"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">{{ activity.product.name }}</div>
+                            <div class="small text-muted">
+                                入库 {{ activity.quantity }} {{ activity.unit_type }} | 
+                                {{ activity.entry_date.strftime('%Y-%m-%d %H:%M') }} | 
+                                批次: {{ activity.batch_number }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-clock-history" style="font-size: 2rem;"></i>
+                        <p class="mt-2">没有最近入库记录</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化日期选择器
+        const expiryDateInput = document.getElementById('expiry_date');
+        if (expiryDateInput) {
+            flatpickr(expiryDateInput, {
+                dateFormat: "Y-m-d",
+                locale: "zh",
+                defaultDate: calculateDefaultExpiryDate(),
+                minDate: "today",
+                disableMobile: "true"
+            });
+        }
+        
+        // 保质期预设选择处理
+        const presets = document.querySelectorAll('.expiry-preset');
+        
+        presets.forEach(preset => {
+            preset.addEventListener('click', function() {
+                const days = parseInt(this.getAttribute('data-days'));
+                const expiry = new Date();
+                expiry.setDate(expiry.getDate() + days);
+                
+                // 更新日期选择器
+                if (expiryDateInput) {
+                    const fp = expiryDateInput._flatpickr;
+                    if (fp) {
+                        fp.setDate(expiry);
+                    }
+                }
+                
+                // 更新选中状态
+                presets.forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // 货架位置选择逻辑
+        const shelfSelect = document.getElementById('shelf_id');
+        const slotSelect = document.getElementById('slot_id');
+        
+        if (shelfSelect && slotSelect) {
+            // 当选择货架时加载该货架的所有货位
+            shelfSelect.addEventListener('change', function() {
+                const selectedShelfId = this.value;
+                
+                // 清空当前货位选项
+                slotSelect.innerHTML = '<option value="">选择货位(可选)</option>';
+                
+                if (selectedShelfId) {
+                    // 向API发送请求
+                    const url = `/mlsp/admin/api/shelf/${selectedShelfId}/slots`;
+                    
+                    fetch(url)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP错误: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // 清空当前选项后重新添加
+                            slotSelect.innerHTML = '<option value="">选择货位(可选)</option>';
+                            
+                            // 处理响应数据
+                            if (data.slots && data.slots.length > 0) {
+                                data.slots.forEach(slot => {
+                                    const option = document.createElement('option');
+                                    option.value = slot.id;
+                                    option.textContent = slot.position;
+                                    slotSelect.appendChild(option);
+                                });
+                            } else {
+                                const emptyOption = document.createElement('option');
+                                emptyOption.disabled = true;
+                                emptyOption.textContent = "该货架没有货位，请先添加货位";
+                                slotSelect.appendChild(emptyOption);
+                            }
+                        })
+                        .catch(error => {
+                            console.error("获取货位失败:", error);
+                            slotSelect.innerHTML = '<option value="">选择货位(可选)</option>';
+                            
+                            const errorOption = document.createElement('option');
+                            errorOption.disabled = true;
+                            errorOption.textContent = `加载失败: ${error.message}`;
+                            slotSelect.appendChild(errorOption);
+                        });
+                }
+            });
+        }
+        
+        // 扫描条形码功能
+        const scanTrigger = document.getElementById('scan-trigger');
+        const scannerContainer = document.getElementById('scanner-container');
+        const scannerVideo = document.getElementById('scanner-video');
+        const cancelScan = document.getElementById('cancel-scan');
+        const captureScan = document.getElementById('capture-scan');
+        const searchInput = document.getElementById('search-input');
+        const searchProductBtn = document.getElementById('search-product');
+        const productInfo = document.getElementById('product-info');
+        
+        // 手动搜索产品
+        searchProductBtn.addEventListener('click', function() {
+            const searchValue = searchInput.value.trim();
+            if (searchValue) {
+                // 判断是数字还是条形码
+                if (/^\d+$/.test(searchValue) && searchValue.length < 8) {
+                    // 按ID查询
+                    fetchProductById(searchValue);
+                } else {
+                    // 按条形码查询
+                    fetchProductByBarcode(searchValue);
+                }
+            }
+        });
+        
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const searchValue = this.value.trim();
+                if (searchValue) {
+                    if (/^\d+$/.test(searchValue) && searchValue.length < 8) {
+                        fetchProductById(searchValue);
+                    } else {
+                        fetchProductByBarcode(searchValue);
+                    }
+                }
+            }
+        });
+        
+        // 点击扫描区域启动扫描
+        scanTrigger.addEventListener('click', function() {
+            scanTrigger.style.display = 'none';
+            scannerContainer.style.display = 'block';
+            startScanner();
+        });
+        
+        // 取消扫描
+        cancelScan.addEventListener('click', function() {
+            stopScanner();
+            scannerContainer.style.display = 'none';
+            scanTrigger.style.display = 'block';
+        });
+        
+        // 手动输入
+        captureScan.addEventListener('click', function() {
+            stopScanner();
+            scannerContainer.style.display = 'none';
+            scanTrigger.style.display = 'block';
+            searchInput.focus();
+        });
+        
+        let scanner = null;
+        
+        // 启动扫描器
+        function startScanner() {
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: scannerVideo,
+                    constraints: {
+                        width: 640,
+                        height: 480,
+                        facingMode: "environment"
+                    },
+                },
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader",
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader",
+                        "i2of5_reader"
+                    ],
+                    multiple: false
+                }
+            }, function(err) {
+                if (err) {
+                    console.error("启动扫描器出错:", err);
+                    alert("无法启动扫描器，请检查摄像头权限或使用手动输入");
+                    scannerContainer.style.display = 'none';
+                    scanTrigger.style.display = 'block';
+                    return;
+                }
+                
+                Quagga.start();
+            });
+            
+            Quagga.onDetected(function(result) {
+                const code = result.codeResult.code;
+                console.log("检测到条码:", code);
+                
+                // 停止扫描
+                stopScanner();
+                
+                // 显示检测到的条码
+                searchInput.value = code;
+                
+                // 搜索产品
+                fetchProductByBarcode(code);
+                
+                // 隐藏扫描器
+                scannerContainer.style.display = 'none';
+                scanTrigger.style.display = 'block';
+            });
+        }
+        
+        // 停止扫描器
+        function stopScanner() {
+            if (Quagga) {
+                try {
+                    Quagga.stop();
+                } catch (e) {
+                    console.error("停止扫描器出错:", e);
+                }
+            }
+        }
+        
+        // 通过ID获取产品信息
+        function fetchProductById(productId) {
+            fetch(`/mlsp/employee/api/product/${productId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`产品不存在或加载失败`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        displayProductInfo(data.product);
+                    } else {
+                        alert(`获取产品信息失败: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error("获取产品信息出错:", error);
+                    alert(`无法找到产品信息: ${error.message}`);
+                });
+        }
+        
+        // 通过条形码获取产品信息
+        function fetchProductByBarcode(barcode) {
+            fetch(`/mlsp/api/product-by-barcode?barcode=${barcode}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`条形码未登记或加载失败`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        displayProductInfo(data.product);
+                    } else {
+                        alert(`获取产品信息失败: ${data.message}`);
+                    }
+                })
+                .catch(error => {
+                    console.error("获取产品信息出错:", error);
+                    alert(`无法找到产品信息: ${error.message}`);
+                });
+        }
+        
+        // 显示产品信息
+        function displayProductInfo(product) {
+            document.getElementById('product-name').textContent = product.name;
+            document.getElementById('product-description').textContent = product.description;
+            document.getElementById('product-image').src = product.image_url;
+            document.getElementById('product_id').value = product.id;
+            document.getElementById('unit-addon').textContent = product.unit_type;
+            
+            // 设置过期日期
+            if (product.expiry_days) {
+                const expiry = new Date();
+                expiry.setDate(expiry.getDate() + product.expiry_days);
+                
+                const fp = expiryDateInput._flatpickr;
+                if (fp) {
+                    fp.setDate(expiry);
+                }
+                
+                // 更新预设高亮
+                updatePresetHighlight(product.expiry_days);
+            }
+            
+            // 显示产品信息区域
+            productInfo.style.display = 'block';
+        }
+        
+        // 更新预设高亮
+        function updatePresetHighlight(days) {
+            presets.forEach(preset => {
+                const presetDays = parseInt(preset.getAttribute('data-days'));
+                if (presetDays === days) {
+                    preset.classList.add('active');
+                } else {
+                    preset.classList.remove('active');
+                }
+            });
+        }
+        
+        // 计算默认过期日期
+        function calculateDefaultExpiryDate() {
+            const today = new Date();
+            const nextYear = new Date(today);
+            nextYear.setFullYear(today.getFullYear() + 1);
+            return nextYear;
+        }
+    });
+    </script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/employee-pwa-install.js"></script>
+</body>
+</html>

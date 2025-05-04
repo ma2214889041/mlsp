@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<!-- PWA支持 -->
+<meta name="theme-color" content="#0d6efd">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="米兰管理端">
+<link rel="apple-touch-icon" href="/mlsp/static/icons/admin.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>库存管理 - 米兰食品公司</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            padding: 20px 0;
+            background: #343a40;
+            color: white;
+            z-index: 1000;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #495057;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.75);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+        }
+        .sidebar .nav-link:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: #0d6efd;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 24px;
+            text-align: center;
+        }
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+        }
+        .content-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .table {
+            white-space: nowrap;
+        }
+        .stock-warning {
+            background-color: #fff3cd;
+        }
+        .stock-danger {
+            background-color: #f8d7da;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+        .inventory-form {
+            background-color: #f1f8ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #0d6efd;
+        }
+        .accordion-button:not(.collapsed) {
+            background-color: #e7f1ff;
+            color: #0c63e4;
+        }
+        .form-loading {
+            position: relative;
+        }
+        .form-loading:after {
+            content: "加载中...";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255,255,255,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .expiry-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .expiry-preset {
+            background-color: #e9ecef;
+            border-radius: 15px;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            border: 1px solid #ced4da;
+            transition: all 0.2s;
+        }
+        .expiry-preset:hover {
+            background-color: #dee2e6;
+        }
+        .expiry-preset.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+        .alert-replenish {
+            background-color: #e8f4fd;
+            border-left: 4px solid #0d6efd;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .alert-expiry {
+            background-color: #feede7;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .tag-low {
+            background-color: #dc3545;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+        .tag-expiry {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            margin-left: 5px;
+        }
+    </style>
+<link rel="stylesheet" href="{{ base_path }}/static/css/pwa-styles.css">
+</head>
+<body>
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-shop"></i> 米兰食品公司</h4>
+            <div class="text-muted">管理后台</div>
+        </div>
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/dashboard">
+                    <i class="bi bi-speedometer2"></i> 仪表盘
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/orders">
+                    <i class="bi bi-list-check"></i> 订单管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/products">
+                    <i class="bi bi-box"></i> 产品管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link active" href="/mlsp/admin/inventory">
+                    <i class="bi bi-clipboard-data"></i> 库存管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/shelves">
+                    <i class="bi bi-grid-3x3"></i> 货架管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/restaurants">
+                    <i class="bi bi-shop"></i> 餐馆管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/mlsp/admin/employees">
+                    <i class="bi bi-people"></i> 员工管理
+                </a>
+            </li>
+            <li class="nav-item mt-5">
+                <a class="nav-link" href="/mlsp/logout">
+                    <i class="bi bi-box-arrow-left"></i> 退出登录
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 主要内容 -->
+    <div class="main-content">
+        <h2 class="mb-4">库存管理</h2>
+
+        <!-- 补货建议区域 -->
+        {% set low_stock_products = [] %}
+        {% set expiry_products = [] %}
+        
+        {% for product in products %}
+            {% if product.stock <= product.stock_threshold %}
+                {% set _ = low_stock_products.append(product) %}
+            {% endif %}
+            
+            {% for inv in product.inventory_items %}
+                {% if inv.remaining > 0 and inv.is_near_expiry() %}
+                    {% set _ = expiry_products.append(inv) %}
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+        
+        {% if low_stock_products|length > 0 %}
+        <div class="alert-replenish">
+            <h5><i class="bi bi-exclamation-triangle"></i> 库存预警</h5>
+            <p>以下产品库存低于阈值，建议补货：</p>
+            <div class="row">
+                {% for product in low_stock_products %}
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ product.image_url }}" class="product-image me-2">
+                        <div>
+                            <strong>{{ product.name }}</strong>
+                            <div>当前: {{ product.stock }} {{ product.unit_type }} <span class="tag-low">低于阈值 {{ product.stock_threshold }}</span></div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if expiry_products|length > 0 %}
+        <div class="alert-expiry">
+            <h5><i class="bi bi-clock-history"></i> 过期预警</h5>
+            <p>以下产品将在30天内过期，请注意优先处理：</p>
+            <div class="row">
+                {% for inv in expiry_products %}
+                <div class="col-md-4 mb-2">
+                    <div class="d-flex align-items-center">
+                        <img src="{{ inv.product.image_url }}" class="product-image me-2">
+                        <div>
+                            <strong>{{ inv.product.name }}</strong>
+                            <div>
+                                批次: {{ inv.batch_number }}
+                                <span class="tag-expiry">{{ (inv.expiry_date - now.date()).days }}天后过期</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 折叠面板 -->
+        <div class="accordion mb-4" id="inventoryAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        <i class="bi bi-plus-circle me-2"></i> 添加库存记录
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#inventoryAccordion">
+                    <div class="accordion-body">
+                        <form action="/mlsp/admin/inventory/update" method="post" class="inventory-form" id="inventoryForm">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="product_id" class="form-label">选择产品</label>
+                                    <select class="form-select" name="product_id" id="product_id" required>
+                                        <option value="">选择产品</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}" data-unit="{{ product.unit_type }}" data-expiry="{{ product.expiry_days }}">{{ product.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="add_stock" class="form-label">添加数量</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="add_stock" id="add_stock" placeholder="添加数量" min="1" required>
+                                        <span class="input-group-text" id="unit-addon">份</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="shelf_id" class="form-label">货架</label>
+                                    <select class="form-select" id="shelf_id" name="shelf_id">
+                                        <option value="">-- 选择货架 --</option>
+                                        {% for shelf in shelves %}
+                                        <option value="{{ shelf.id }}">{{ shelf.name }} ({{ shelf.location }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="slot_id" class="form-label">货位</label>
+                                    <select class="form-select" name="slot_id" id="slot_id">
+                                        <option value="">选择货位(可选)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="expiry_date" class="form-label">过期日期</label>
+                                    <input type="text" class="form-control datepicker" name="expiry_date" id="expiry_date" placeholder="选择日期" required>
+                                    
+                                    <div class="expiry-presets mt-2">
+                                        <span class="expiry-preset" data-days="30">30天</span>
+                                        <span class="expiry-preset" data-days="90">90天</span>
+                                        <span class="expiry-preset" data-days="180">半年</span>
+                                        <span class="expiry-preset" data-days="365">1年</span>
+                                        <span class="expiry-preset" data-days="730">2年</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="batch_number" class="form-label">批次号 (可选)</label>
+                                    <input type="text" class="form-control" name="batch_number" id="batch_number" placeholder="留空系统自动生成">
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> 添加库存
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <h5 class="mb-3">当前库存</h5>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>产品</th>
+                            <th>当前库存</th>
+                            <th>状态</th>
+                            <th>货架位置</th>
+                            <th>过期日期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr {% if product.stock <= 0 %}class="stock-danger"{% elif product.stock < product.stock_threshold %}class="stock-warning"{% endif %}>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-image me-2">
+                                    <div>
+                                        <div class="fw-bold">{{ product.name }}</div>
+                                        <small class="text-muted">ID: #{{ product.id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ product.stock }} {{ product.unit_type }}</td>
+                            <td>
+                                {% if product.stock <= 0 %}
+                                <span class="badge bg-danger">缺货</span>
+                                {% elif product.stock < product.stock_threshold %}
+                                <span class="badge bg-warning text-dark">库存低</span>
+                                {% else %}
+                                <span class="badge bg-success">正常</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set locations = [] %}
+                                {% for inv in product.inventory_items %}
+                                    {% if inv.slot and inv.remaining > 0 %}
+                                        {% if inv.slot.shelf.name not in locations %}
+                                            {% set _ = locations.append(inv.slot.shelf.name + "-" + inv.slot.position) %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if locations %}
+                                    {% for loc in locations %}
+                                    <span class="badge bg-info">{{ loc }}</span>
+                                    {% endfor %}
+                                {% else %}
+                                <span class="text-muted">未分配</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set nearest_expiry = None %}
+                                {% for inv in product.inventory_items %}
+                                    {% if inv.remaining > 0 %}
+                                        {% if nearest_expiry is none or inv.expiry_date < nearest_expiry %}
+                                            {% set nearest_expiry = inv.expiry_date %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if nearest_expiry %}
+                                    {% if nearest_expiry < now.date() %}
+                                    <span class="badge bg-danger">已过期: {{ nearest_expiry.strftime('%Y-%m-%d') }}</span>
+                                    {% elif (nearest_expiry - now.date()).days < 30 %}
+                                    <span class="badge bg-warning text-dark">近期过期: {{ nearest_expiry.strftime('%Y-%m-%d') }}</span>
+                                    {% else %}
+                                    {{ nearest_expiry.strftime('%Y-%m-%d') }}
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">无数据</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="/mlsp/admin/product/{{ product.id }}/edit" class="btn btn-sm btn-outline-primary">编辑产品</a>
+                                    <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#inventoryDetailModal{{ product.id }}">
+                                        查看批次
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 库存详情模态框 -->
+                        <div class="modal fade" id="inventoryDetailModal{{ product.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">{{ product.name }} - 库存批次明细</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>批次号</th>
+                                                        <th>总数量</th>
+                                                        <th>剩余数量</th>
+                                                        <th>货架位置</th>
+                                                        <th>入库日期</th>
+                                                        <th>过期日期</th>
+                                                        <th>状态</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for inv in product.inventory_items %}
+                                                    <tr {% if inv.is_expired() %}class="table-danger"{% elif inv.is_near_expiry() %}class="table-warning"{% endif %}>
+                                                        <td>{{ inv.batch_number }}</td>
+                                                        <td>{{ inv.quantity }} {{ inv.unit_type }}</td>
+                                                        <td>{{ inv.remaining }} {{ inv.unit_type }}</td>
+                                                        <td>
+                                                            {% if inv.slot %}
+                                                            {{ inv.slot.shelf.name }}-{{ inv.slot.position }}
+                                                            {% else %}
+                                                            未分配
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ inv.entry_date.strftime('%Y-%m-%d') }}</td>
+                                                        <td>{{ inv.expiry_date.strftime('%Y-%m-%d') }}</td>
+                                                        <td>
+{% if inv.is_expired() %}
+                                                            <span class="badge bg-danger">已过期</span>
+                                                            {% elif inv.is_near_expiry() %}
+                                                            <span class="badge bg-warning text-dark">即将过期</span>
+                                                            {% else %}
+                                                            <span class="badge bg-success">正常</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        {% if not products %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="bi bi-box-seam" style="font-size: 2rem; color: #ccc;"></i>
+                                <p class="mt-2 mb-0">没有产品信息</p>
+                                <a href="/mlsp/admin/product/add" class="btn btn-primary mt-2">添加产品</a>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("脚本加载完成，初始化表单处理");
+        
+        // 初始化日期选择器
+        const expiryDateInput = document.getElementById('expiry_date');
+        if (expiryDateInput) {
+            flatpickr(expiryDateInput, {
+                dateFormat: "Y-m-d",
+                locale: "zh",
+                defaultDate: calculateDefaultExpiryDate(),
+                minDate: "today",
+                disableMobile: "true"
+            });
+        }
+        
+        // 保质期预设选择处理
+        const presets = document.querySelectorAll('.expiry-preset');
+        
+        presets.forEach(preset => {
+            preset.addEventListener('click', function() {
+                const days = parseInt(this.getAttribute('data-days'));
+                const expiry = new Date();
+                expiry.setDate(expiry.getDate() + days);
+                
+                // 更新日期选择器
+                if (expiryDateInput) {
+                    const fp = expiryDateInput._flatpickr;
+                    if (fp) {
+                        fp.setDate(expiry);
+                    }
+                }
+                
+                // 更新选中状态
+                presets.forEach(p => p.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+        
+        // 产品选择变更时更新单位显示和默认过期日期
+        const productSelect = document.getElementById('product_id');
+        const unitAddon = document.getElementById('unit-addon');
+        
+        if (productSelect && unitAddon) {
+            productSelect.addEventListener('change', function() {
+                // 获取选中的选项
+                const selectedOption = this.options[this.selectedIndex];
+                
+                // 更新单位显示
+                if (selectedOption.dataset.unit) {
+                    unitAddon.textContent = selectedOption.dataset.unit;
+                } else {
+                    unitAddon.textContent = "份";
+                }
+                
+                // 更新默认过期日期
+                if (selectedOption.dataset.expiry && expiryDateInput) {
+                    const expiryDays = parseInt(selectedOption.dataset.expiry);
+                    const expiry = new Date();
+                    expiry.setDate(expiry.getDate() + expiryDays);
+                    
+                    // 更新日期选择器
+                    const fp = expiryDateInput._flatpickr;
+                    if (fp) {
+                        fp.setDate(expiry);
+                    }
+                    
+                    // 更新预设高亮
+                    updatePresetHighlight(expiryDays);
+                }
+            });
+        }
+        
+        // 更新预设高亮
+        function updatePresetHighlight(days) {
+            presets.forEach(preset => {
+                const presetDays = parseInt(preset.getAttribute('data-days'));
+                if (presetDays === days) {
+                    preset.classList.add('active');
+                } else {
+                    preset.classList.remove('active');
+                }
+            });
+        }
+        
+        // 货架位置选择逻辑
+        const shelfSelect = document.getElementById('shelf_id');
+        const slotSelect = document.getElementById('slot_id');
+        
+        if (shelfSelect && slotSelect) {
+            console.log("初始化货架和货位选择器");
+            
+            // 当选择货架时加载该货架的所有货位
+            shelfSelect.addEventListener('change', function() {
+                const selectedShelfId = this.value;
+                console.log("选择了货架ID:", selectedShelfId);
+                
+                // 清空当前货位选项
+                slotSelect.innerHTML = '<option value="">选择货位(可选)</option>';
+                
+                if (selectedShelfId) {
+                    // 向API发送请求
+                    const url = `/mlsp/admin/api/shelf/${selectedShelfId}/slots`;
+                    console.log("请求URL:", url);
+                    
+                    fetch(url)
+                        .then(response => {
+                            console.log("API响应状态:", response.status);
+                            if (!response.ok) {
+                                throw new Error(`HTTP错误: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log("接收到的货位数据:", data);
+                            
+                            // 清空当前选项后重新添加
+                            slotSelect.innerHTML = '<option value="">选择货位(可选)</option>';
+                            
+                            // 处理响应数据
+                            if (data.slots && data.slots.length > 0) {
+                                data.slots.forEach(slot => {
+                                    const option = document.createElement('option');
+                                    option.value = slot.id;
+                                    option.textContent = slot.position;
+                                    slotSelect.appendChild(option);
+                                });
+                                console.log(`添加了 ${data.slots.length} 个货位选项`);
+                            } else {
+                                const emptyOption = document.createElement('option');
+                                emptyOption.disabled = true;
+                                emptyOption.textContent = "该货架没有货位，请先添加货位";
+                                slotSelect.appendChild(emptyOption);
+                            }
+                        })
+                        .catch(error => {
+                            console.error("获取货位失败:", error);
+                            slotSelect.innerHTML = '<option value="">选择货位(可选)</option>';
+                            
+                            const errorOption = document.createElement('option');
+                            errorOption.disabled = true;
+                            errorOption.textContent = `加载失败: ${error.message}`;
+                            slotSelect.appendChild(errorOption);
+                        });
+                }
+            });
+        }
+        
+        // 计算默认过期日期
+        function calculateDefaultExpiryDate() {
+            const today = new Date();
+            const nextYear = new Date(today);
+            nextYear.setFullYear(today.getFullYear() + 1);
+            return nextYear;
+        }
+    });
+    </script>
+<script src="{{ base_path }}/static/js/pwa-guide.js"></script>
+<script src="/mlsp/static/js/pwa-check.js"></script>
+<script src="/mlsp/static/js/admin-pwa-install.js"></script>
+</body>
+</html>
